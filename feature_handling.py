@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, OrdinalEncoder, OneHotEncoder
 from sklearn.feature_extraction import DictVectorizer
 
 
@@ -350,32 +350,42 @@ class FeatureHandling:
         if drop:
             self.drop(col)
 
-    def general_encoder(self, num_cols, cat_cols):
+    def general_encoder(self, num_cols=None, one_hot_cols=None, ordinal_cols=None):
         """
         Encode categorical features by one-hot, numerical features by mean-std scaling
         No dropping the first column after one-hot, so this function is not suitable for linear models
         :param num_cols: list of numerical columns to be encoded
-        :param cat_cols: list of categorical columns to be encoded
+        :param one_hot_cols: list of categorical columns to be one-hot encoded
+        :param ordinal_cols: list of ordinal columns to be ordinal encoded
         :return:
         """
-        df1_rest = list(set(self.df1.columns.tolist()) - set(num_cols) - set(cat_cols))
+
+        df1_rest = list(set(self.df1.columns.tolist()) - set(num_cols) - set(one_hot_cols) - set(ordinal_cols))
+
         dv = DictVectorizer(sparse=False)
-        cls_cat1 = dv.fit_transform(self.df1[cat_cols].to_dict(orient='record'))
+        cls_cat1 = dv.fit_transform(self.df1[one_hot_cols].to_dict(orient='record'))
         df1_cat = pd.DataFrame(data=cls_cat1, columns=dv.feature_names_)
 
         ss = StandardScaler()
         cls_num1 = ss.fit_transform(self.df1[num_cols])
         df1_num = pd.DataFrame(cls_num1, columns=num_cols)
 
-        df1_encoded = pd.concat([df1_num, df1_cat, df1_rest], axis=1)
+        oe = OrdinalEncoder()
+        cls_ord1 = oe.fit_transform(self.df1[ordinal_cols])
+        df1_ord = pd.DataFrame(cls_ord1, columns=ordinal_cols)
+
+        df1_encoded = pd.concat([df1_num, df1_cat, df1_ord, df1_rest], axis=1)
 
         if self.df2 is None:
             return df1_encoded
         else:
-            df2_rest = self.df2.columns.tolist() - num_cols - cat_cols
-            cls_cat2 = dv.transform(self.df2[cat_cols].to_dict(orient='record'))
+            df2_rest = df1_rest
+            cls_cat2 = dv.transform(self.df2[one_hot_cols].to_dict(orient='record'))
             df2_cat = pd.DataFrame(data=cls_cat2, columns=dv.feature_names_)
             cls_num2 = ss.transform(self.df2[num_cols])
             df2_num = pd.DataFrame(cls_num2, columns=num_cols)
-            df2_encoded = pd.concat([df2_num, df2_cat, df2_rest], axis=1)
+            cls_ord2 = oe.transform(self.df2[ordinal_cols])
+            df2_orf = pd.DataFrame(cls_ord2, columns=ordinal_cols)
+
+            df2_encoded = pd.concat([df2_num, df2_cat, df2_orf, df2_rest], axis=1)
             return df1_encoded, df2_encoded
