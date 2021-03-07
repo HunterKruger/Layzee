@@ -1,0 +1,46 @@
+PassengerId,Pclass,Name,Sex,Age,SibSp,Parch,Ticket,Fare,Cabin,Embarked
+863,1,"Swift, Mrs. Frederick Joel (Margaret Welles Barron)",female,48.0,0,0,17466,25.9292,D17,S
+224,3,"Nenkoff, Mr. Christo",male,,0,0,349234,7.8958,,S
+85,2,"Ilett, Miss. Bertha",female,17.0,0,0,SO/C 14885,10.5,,S
+681,3,"Peters, Miss. Katie",female,,0,0,330935,8.1375,,Q
+536,2,"Hart, Miss. Eva Miriam",female,7.0,0,2,F.C.C. 13529,26.25,,S
+624,3,"Hansen, Mr. Henry Damsgaard",male,21.0,0,0,350029,7.8542,,S
+149,2,"Navratil, Mr. Michel (""Louis M Hoffman"")",male,36.5,0,2,230080,26.0,F2,S
+4,1,"Futrelle, Mrs. Jacques Heath (Lily May Peel)",female,35.0,1,0,113803,53.1,C123,S
+35,1,"Meyer, Mr. Edgar Joseph",male,28.0,1,0,PC 17604,82.1708,,C
+242,3,"Murphy, Miss. Katherine ""Kate""",female,,1,0,367230,15.5,,Q
+795,3,"Dantcheff, Mr. Ristiu",male,25.0,0,0,349203,7.8958,,S
+3,3,"Heikkinen, Miss. Laina",female,26.0,0,0,STON/O2. 3101282,7.925,,S
+7,1,"McCarthy, Mr. Timothy J",male,54.0,0,0,17463,51.8625,E46,S
+18,2,"Williams, Mr. Charles Eugene",male,,0,0,244373,13.0,,S
+369,3,"Jermyn, Miss. Annie",female,,0,0,14313,7.75,,Q
+431,1,"Bjornstrom-Steffansson, Mr. Mauritz Hakan",male,28.0,0,0,110564,26.55,C52,S
+820,3,"Skoog, Master. Karl Thorsten",male,10.0,3,2,347088,27.9,,S
+744,3,"McNamee, Mr. Neal",male,24.0,1,0,376566,16.1,,S
+190,3,"Turcin, Mr. Stjepan",male,36.0,0,0,349247,7.8958,,S
+438,2,"Richards, Mrs. Sidney (Emily Hocking)",female,24.0,2,3,29106,18.75,,S
+383,3,"Tikkanen, Mr. Juho",male,32.0,0,0,STON/O 2. 3101293,7.925,,S
+74,3,"Chronopoulos, Mr. Apostolos",male,26.0,1,0,2680,14.4542,,C
+711,1,"Mayne, Mlle. Berthe Antonine (""Mrs de Villiers"")",female,24.0,0,0,PC 17482,49.5042,C90,C
+386,2,"Davies, Mr. Charles Henry",male,18.0,0,0,S.O.C. 14879,73.5,,S
+112,3,"Zabour, Miss. Hileni",female,14.5,1,0,2665,14.4542,,C
+822,3,"Lulic, Mr. Nikola",male,27.0,0,0,315098,8.6625,,S
+743,1,"Ryerson, Miss. Susan Parker ""Suzette""",female,21.0,2,2,PC 17608,262.375,B57 B59 B63 B66,C
+866,2,"Bystrom, Mrs. (Karolina)",female,42.0,0,0,236852,13.0,,S
+620,2,"Gavey, Mr. Lawrence",male,26.0,0,0,31028,10.5,,S
+709,1,"Cleaver, Miss. Alice",female,22.0,0,0,113781,151.55,,S
+883,3,"Dahlberg, Miss. Gerda Ulrika",female,22.0,0,0,7552,10.5167,,S
+299,1,"Saalfeld, Mr. Adolphe",male,,0,0,19988,30.5,C106,S
+611,3,"Andersson, Mrs. Anders Johan (Alfrida Konstantia Brogren)",female,39.0,1,5,347082,31.275,,S
+730,3,"Ilmakangas, Miss. Pieta Sofia",female,25.0,1,0,STON/O2. 3101271,7.925,,S
+526,3,"Farrell, Mr. James",male,40.5,0,0,367232,7.75,,Q
+234,3,"Asplund, Miss. Lillian Gertrud",female,5.0,4,2,347077,31.3875,,S
+513,1,"McGough, Mr. James Robert",male,36.0,0,0,PC 17473,26.2875,E25,S
+155,3,"Olsen, Mr. Ole Martin",male,,0,0,Fa 265302,7.3125,,S
+371,1,"Harder, Mr. George Achilles",male,25.0,1,0,11765,55.4417,E50,C
+641,3,"Jensen, Mr. Hans Peder",male,20.0,0,0,350050,7.8542,,S
+217,3,"Honkanen, Miss. Eliina",female,27.0,0,0,STON/O2. 3101283,7.925,,S
+9,3,"Johnson, Mrs. Oscar W (Elisabeth Vilhelmina Berg)",female,27.0,0,2,347742,11.1333,,S
+872,1,"Beckwith, Mrs. Richard Leonard (Sallie Monypeny)",female,47.0,1,1,11751,52.5542,D35,S
+332,1,"Partner, Mr. Austen",male,45.5,0,0,113043,28.5,C124,S
+828,2,"Mallet, Master. Andre",male,1.0,0,2,S.C./PARIS 2079,37.0042,,C
