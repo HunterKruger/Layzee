@@ -725,7 +725,3 @@ class FeatureHandling2(FeatureHandling):
         df_encoded = pd.concat([df1_num, df1_cat, df1_ord, self.df[cls_rest]], axis=1)
         df2_encoded = pd.concat([df2_num, df2_cat, df2_ord, self.df2[cls_rest]], axis=1)
         return df_encoded, df2_encoded
-
-
-class FeatureHandlingFit(FeatureHandling):
-    pass
