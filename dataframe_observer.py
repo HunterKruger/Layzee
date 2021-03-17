@@ -2,6 +2,9 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 
+pd.options.display.max_columns = 100
+pd.options.display.max_rows = 100
+
 
 class DataframeObserver:
 
@@ -40,12 +43,17 @@ class DataframeObserver:
         plot_size_x: size of plot in x-axis
         plot_size_y: size of plot in y-axis
         """
+
+        result = dict()
+        result['Type'] = str(df[col_name].dtype)
+        result['Rows'] = df.shape[0]
+        result['Distinct'] = df[col_name].nunique()
+        result['Missing'] = df[col_name].isnull().sum()
+        result['Missing%'] = df[col_name].isnull().sum() / df.shape[0]
+
         print('-------------------------------------')
-        print('Type: ' + str(df[col_name].dtype))
-        print('Rows: ' + str(df.shape[0]))
-        print('Distinct: ' + str(df[col_name].nunique()))
-        print('Missing: ' + str(df[col_name].isnull().sum()))
-        print('Missing%: ' + str(df[col_name].isnull().sum() / df.shape[0]))
+        for k, v in result.items():
+            print(str(k) + ': ' + str(v))
         print('-------------------------------------')
 
         if top_n is None:
@@ -69,13 +77,7 @@ class DataframeObserver:
         sns.countplot(y=col_name, data=df, order=df[col_name].value_counts().nlargest(top_n).index)
 
         if return_result:
-            result = dict()
-            result['Type'] = str(df[col_name].dtype)
-            result['Rows'] = df.shape[0]
-            result['Distinct'] = df[col_name].nunique()
-            result['Missing'] = df[col_name].isnull().sum()
-            result['Missing%'] = df[col_name].isnull().sum() / df.shape[0]
-            return result
+            return result, count_table_info
 
     # test passed
     @staticmethod
@@ -85,22 +87,6 @@ class DataframeObserver:
         col_name: column name
         """
 
-        print('-------------------------------------')
-        print('Type: ' + str(df[col_name].dtype))
-        print('Rows: ' + str(df.shape[0]))
-        print('Min: ' + str(df[col_name].min()))
-        print('Max: ' + str(df[col_name].max()))
-        print('Mean: ' + str(df[col_name].mean()))
-        print('Median: ' + str(df[col_name].median()))
-        print('Mode: ' + str(df[col_name].value_counts().index[0]))
-        print('StdDev: ' + str(df[col_name].std()))
-        print('Distinct: ' + str(df[col_name].nunique()))
-        print('Sum: ' + str(df[col_name].sum()))
-        print('Missing: ' + str(df[col_name].isnull().sum()))
-        print('Missing%: ' + str(df[col_name].isnull().sum() / df.shape[0]))
-        print('Skewness: ' + str(df[col_name].skew()))
-        print('Kurtosis: ' + str(df[col_name].kurtosis()))
-
         Q1 = df[col_name].quantile(q=0.25)
         Q3 = df[col_name].quantile(q=0.75)
         IQR = Q3 - Q1
@@ -108,37 +94,81 @@ class DataframeObserver:
         lower_bound = Q1 - 1.5 * IQR
         outliers = len(df[(df[col_name] < lower_bound) | (df[col_name] > upper_bound)])
 
-        print('Outliers: ' + str(outliers))
-        print('25%: ' + str(Q1))
-        print('75%: ' + str(Q3))
-        print('IQR: ' + str(IQR))
-        print('Down: ' + str(lower_bound))
-        print('Up: ' + str(upper_bound))
+        result = dict()
+        result['Type'] = df[col_name].dtype
+        result['Rows'] = df.shape[0]
+        result['Min'] = df[col_name].min()
+        result['Max'] = df[col_name].max()
+        result['Mean'] = df[col_name].mean()
+        result['Median'] = df[col_name].median()
+        result['Mode'] = df[col_name].value_counts().index[0]
+        result['StdDev'] = df[col_name].std()
+        result['Distinct'] = df[col_name].nunique()
+        result['Sum'] = df[col_name].sum()
+        result['Missing'] = df[col_name].isnull().sum()
+        result['Missing%'] = df[col_name].isnull().sum() / df.shape[0]
+        result['Skewness'] = df[col_name].skew()
+        result['Kurtosis'] = df[col_name].kurtosis()
+        result['Outliers'] = outliers
+        result['Q1'] = Q1
+        result['Q3'] = Q3
+        result['IQR'] = IQR
+        result['Down'] = lower_bound
+        result['Up'] = upper_bound
+
+        print('-------------------------------------')
+        for k, v in result.items():
+            print(str(k) + ': ' + str(v))
         print('-------------------------------------')
         fig, ax = plt.subplots(2, 1)
         sns.histplot(data=df, x=col_name, kde=True, ax=ax[0])
         sns.boxplot(x=df[col_name], ax=ax[1])
 
         if return_result:
-            result = dict()
-            result['Type'] = str(df[col_name].dtype)
-            result['Rows'] = df.shape[0]
-            result['Min'] = df[col_name].min()
-            result['Max'] = df[col_name].max()
-            result['Mean'] = df[col_name].mean()
-            result['Median'] = df[col_name].median()
-            result['Mode'] = df[col_name].value_counts().index[0]
-            result['StdDev'] = df[col_name].std()
-            result['Distinct'] = df[col_name].nunique()
-            result['Sum'] = df[col_name].sum()
-            result['Missing'] = df[col_name].isnull().sum()
-            result['Missing%'] = df[col_name].isnull().sum() / df.shape[0]
-            result['Skewness'] = df[col_name].skew()
-            result['Kurtosis'] = df[col_name].kurtosis()
-            result['Outliers'] = outliers
-            result['Q1'] = Q1
-            result['Q3'] = Q3
-            result['IQR'] = IQR
-            result['Down'] = lower_bound
-            result['Up'] = upper_bound
             return result
+
+    # test passed
+    @staticmethod
+    def missing_pattern(df, top_n=5, plot=True):
+        """
+        Check the missing patterns of a DataFrame
+        :param top_n: the top n patterns to be displayed
+        :param plot: plot heatmap to missing partern if True
+        """
+        if plot:
+            sns.heatmap(df[df.columns[df.isnull().any()].tolist()].isnull(), yticklabels=False, cmap='hot_r',
+                        cbar=False)
+        df_miss = df.applymap(lambda x: '1' if pd.isna(x) else '0')
+        row_miss = df_miss.apply(lambda x: '-'.join(x.values), axis=1)
+        print('-------------------------------------------------')
+        print(df.columns.tolist())
+        print(row_miss.value_counts().nlargest(top_n))
+
+    # test passed
+    @staticmethod
+    def correlation(df, col_list=None, method='pearson', threshold=1, plot_size_x=7, plot_size_y=6):
+        """
+        col_list: list of columns to calculate correlations
+        method: 'pearson', 'spearman', 'kendall'
+        size: plot size
+        threshold: return pairs with abs(corr)>threshold if specified
+        """
+        fig, ax = plt.subplots(figsize=(plot_size_x, plot_size_y))
+        if col_list is None:
+            corr_cols = df.columns.tolist()
+            corr = df.corr(method)
+        else:
+            corr_cols = col_list
+            corr = df[col_list].corr(method)
+        sns.heatmap(corr, annot=True, linewidths=.5, cmap=sns.cm.vlag, vmin=-1, vmax=1)
+        plt.show()
+
+        result = []
+
+        if 0 < threshold < 1:
+            for i in range(len(corr_cols)):
+                for j in range(len(corr_cols)):
+                    corr_ij = corr.loc[corr_cols[i], corr_cols[j]]
+                    if j < i and corr_ij >= threshold:
+                        result.append((corr_cols[i], corr_cols[j], corr_ij))
+        return result

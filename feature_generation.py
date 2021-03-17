@@ -35,10 +35,8 @@ class FeatureGeneration:
             new_cols.append(i + '-' + j)
         if drop_origin:
             df.drop(num_cols, axis=1, inplace=True)
-        if return_cols:
-            return df, new_cols
-        else:
-            return df
+
+        return df, new_cols if return_cols else df
 
     # test passed
     @staticmethod
@@ -64,11 +62,27 @@ class FeatureGeneration:
             new_cols.append(i + '*' + j)
         if drop_origin:
             df.drop(num_cols, axis=1, inplace=True)
-        if return_cols:
-            return df, new_cols
-        else:
-            return df
+        return df, new_cols if return_cols else df
 
     @staticmethod
     def explicit_pairwise_interactions(df: DataFrame, col1, col2, return_cols=False, drop_origin=False):
-        pass
+        """
+        This generator generates pairwise interactions between 2 features:
+        Numerical features will be multiplied
+        Numerical and categorical features will produce a dummies multiplied by the numerical feature.
+        Two categorical features will produce dummies in the cross-product of the two features
+        :param df: DataFrame
+        :param col1: specify the 1st column
+        :param col2: specify the 2nd column
+        :param return_cols: choose 'True' to return generated feature list
+        :param drop_origin: choose 'True' to drop 'num_cols' in 'df'
+        :return:
+        """
+        if df[col1].dtype == 'O' and df[col2].dtype == 'O':
+            pass
+        if df[col1].dtype != 'O' and df[col2].dtype == 'O':
+            pass
+        if df[col1].dtype == 'O' and df[col2].dtype != 'O':
+            pass
+        if df[col1].dtype != 'O' and df[col2].dtype != 'O':
+            pass
