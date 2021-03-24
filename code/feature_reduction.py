@@ -68,6 +68,7 @@ class FeatureReduction:
             if decimal >0 and <1, select the number of components such that the amount of variance that needs to be
                 explained is greater than the percentage specified by n_components
         :return
+            reduced DataFrame
         """
         result = PCA(n_components=n).fit_transform(self.X)
         nb_cols = result.shape[1]
@@ -123,26 +124,22 @@ class RegressionFeatureReduction(FeatureReduction):
         result_features = result_series[result_series != 0].index.tolist()
         return result_features, self.X[result_features]
 
-    # test passed
-    def corr(self, n, cols, method='pearson', return_all=False):
+    def pearson_corr(self, n, cols, return_all=False):
         """
-        :param method: 'pearson', 'spearman', 'kendall'
         :param n: number of numerical columns to be kept
         :param cols: list of columns in X to be calculated with y
         :param return_all: return selected num_cols and non-num_cols together
         :return:
         """
-
         if n >= len(cols):
-            print("n must smaller than number of numerical cols!")
-            return
+            raise ValueError("n must smaller than number of numerical cols!")
         else:
             temp_X = self.X[cols]
 
-        cols_rest = list(set(self.X.columns.tolist()) - set(temp_X.columns.tolist()))
+        cols_rest = list(set(self.X.columns.tolist()) - set(cols))
 
         all_data = pd.concat([temp_X, self.y], axis=1)
-        result = all_data.corr(method).iloc[:-1, -1].sort_values(ascending=False).index.tolist()[:n]
+        result = all_data.corr('pearson').iloc[:-1, -1].sort_values(ascending=False).index.tolist()[:n]
 
         return result, self.X[result + cols_rest] if return_all else result, self.X[result]
 
@@ -167,7 +164,7 @@ class ClassificationFeatureReduction(FeatureReduction):
     def tree_based(self, n_keep, n_trees, depth):
         """
         This creates a Random Forest model to predict the target.
-        Only the top features according to the feature importances computed by the algorithm will be selected.
+        Only the top features according to the feature importance computed by the algorithm will be selected.
         :param n_keep: number of features to keep
         :param n_trees: number of trees in Random Forest
         :param depth: tree depth in Random Forest

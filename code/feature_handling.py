@@ -10,16 +10,16 @@ class FeatureHandling:
     """
 
     def __init__(self, df, drop_origin=True):
-        self.df = df
+        self.df = df.copy()
         self.drop_origin = drop_origin
 
     def imputer(self, col, method='mode', groupby=None):
         """
         Impute missing values in a column
+        :param groupby: -> str or list of str:
+                group by one or several categorical columns to calculate the values for imputing
         :param col: column name
         :param method: choose the method of imputing, a customized value is allowed
-        :param groupby -> str or list of str:
-                group by one or several categorical columns to calculate the values for imputing
         """
 
         if groupby is None:
@@ -177,20 +177,18 @@ class FeatureHandling:
         if self.drop_origin:
             self.drop(col)
 
-    @staticmethod
-    def get_skewness(df, col):
-        # exclude outer 3% data and 0
-        q_015, q_985 = df[col].quantile([0.015, 0.985])
-        return df[col][(col >= q_015) & (col <= q_985) & (col != 0)].skew()
+    def get_skewness(self, col):
+        # exclude outer 3% data
+        q_015, q_985 = self.df[col].quantile([0.015, 0.985])
+        return self.df[col][(col >= q_015) & (col <= q_985)].skew()
 
     def handle_skewness(self, col):
         """
         log(1+x) transformation if col>0 and -1<skewness<1
         Only do this for one DataFrame: df1
         :param col: column name, must be numerical
-        :param drop: drop the origin feature
         """
-        skewness = self.get_skewness(self.df, col)
+        skewness = self.get_skewness(col)
         print('Skewness: ' + str(skewness))
 
         if skewness <= 1 or skewness >= -1:
@@ -217,10 +215,9 @@ class FeatureHandling:
         :param reverse:
                 False: output = 1 when value is larger than threshold
                 True: output = 1 when value is smaller than threshold
-        :param drop: drop the origin column
         """
 
-        def bin(x):
+        def bin_(x):
             if np.isnan(x):
                 return x
             elif x < threshold:
@@ -237,7 +234,7 @@ class FeatureHandling:
                 return 0
 
         if not reverse:
-            self.df[col + '_binned'] = self.df[col].apply(lambda x: bin(x))
+            self.df[col + '_binned'] = self.df[col].apply(lambda x: bin_(x))
         else:
             self.df[col + '_binned'] = self.df[col].apply(lambda x: bin_reverse(x))
 
@@ -257,7 +254,6 @@ class FeatureHandling:
         :param reverse:
                 False: value == target, then gives 1
                 True: value == target, then gives 0
-        :param drop: drop the origin column
         """
 
         def idc(x):
@@ -358,7 +354,9 @@ class FeatureHandling:
 
         cls_rest = list(set(self.df.columns.tolist()) - set(num_cols) - set(one_hot_cols) - set(ordinal_cols))
 
-        df_encoded = pd.concat([df1_num, df1_cat, df1_ord, self.df[cls_rest]], axis=1)
+        df_encoded = pd.concat(
+            [df1_num.reset_index(drop=True), df1_cat.reset_index(drop=True), df1_ord.reset_index(drop=True),
+             self.df[cls_rest].copy().reset_index(drop=True)], axis=1)
 
         return df_encoded
 
@@ -367,12 +365,12 @@ class FeatureHandling2(FeatureHandling):
     """
     Several feature handling methods.
     1st dataframe will be fit then transformed.
-    2st dataframe will be transformed based on 1st dataframe.
+    2st dataframe will be transformed based on the 1st dataframe.
     """
 
     def __init__(self, df, df2, drop_origin=True):
         super().__init__(df, drop_origin)
-        self.df2 = df2
+        self.df2 = df2.copy()
 
     def imputer(self, col, method='mode', groupby=None):
         """
@@ -392,9 +390,9 @@ class FeatureHandling2(FeatureHandling):
                 temp = self.df[col].mode()[0]
             else:
                 temp = method
-
             self.df[col].fillna(temp, inplace=True)
             self.df2[col].fillna(temp, inplace=True)
+
         else:
             if method == 'mean':
                 self.df[col] = self.df.groupby(groupby)[col].apply(lambda x: x.fillna(x.mean()))
@@ -404,8 +402,7 @@ class FeatureHandling2(FeatureHandling):
                 self.df[col] = self.df.groupby(groupby)[col].apply(lambda x: x.fillna(x.mode()[0]))
             else:
                 print("Please set 'groupby' to None!")
-
-            ### todo: transform on df2
+            # todo: transform on df2
 
     def manual_imputers(self, method_dict):
         """
@@ -442,7 +439,7 @@ class FeatureHandling2(FeatureHandling):
         self.df2[col] = self.df2[col].apply(lambda x: x if x in top_n else result)
 
     # test passed
-    def handle_outlier(self, col, drop_row):
+    def handle_outlier(self, col, drop_row=False):
         """
         Handle outliers in a numerical column.
         Should not contain missing values, or they will be imputed by median.
@@ -570,7 +567,7 @@ class FeatureHandling2(FeatureHandling):
                 True: output = 1 when value is smaller than threshold
         """
 
-        def bin(x):
+        def bin_(x):
             if np.isnan(x):
                 return x
             elif x < threshold:
@@ -587,13 +584,11 @@ class FeatureHandling2(FeatureHandling):
                 return 0
 
         if not reverse:
-            self.df[col + '_binned'] = self.df[col].apply(lambda x: bin(x))
-            if self.df2 is not None:
-                self.df2[col + '_binned'] = self.df2[col].apply(lambda x: bin(x))
+            self.df[col + '_binned'] = self.df[col].apply(lambda x: bin_(x))
+            self.df2[col + '_binned'] = self.df2[col].apply(lambda x: bin_(x))
         else:
             self.df[col + '_binned'] = self.df[col].apply(lambda x: bin_reverse(x))
-            if self.df2 is not None:
-                self.df2[col + '_binned'] = self.df2[col].apply(lambda x: bin_reverse(x))
+            self.df2[col + '_binned'] = self.df2[col].apply(lambda x: bin_reverse(x))
 
         if self.drop_origin:
             self.drop(col)
@@ -667,7 +662,7 @@ class FeatureHandling2(FeatureHandling):
         if self.drop_origin:
             self.drop(col)
 
-    def general_encoder(self, num_cols=None, ordinal_cols=None, one_hot_cols=None, drop=None):
+    def general_encoder(self, num_cols=None, ordinal_cols=None, one_hot_cols=None, return_encoders=False, drop=None):
         """
         A general encoder to transform numerical, categorical and ordinal features.
         :param drop:
@@ -680,8 +675,10 @@ class FeatureHandling2(FeatureHandling):
         :param num_cols: list of numerical columns to be encoded
         :param one_hot_cols: list of categorical columns to be one-hot encoded
         :param ordinal_cols: list of ordinal columns to be ordinal encoded
+        :param return_encoders: return these 3 encoders if True
         :return
             encoded df1 and df2
+            encoded df1 and df2, StandardScaler, OrdinalEncoder, OneHotEncoder
         """
 
         if drop is None:
@@ -698,7 +695,7 @@ class FeatureHandling2(FeatureHandling):
         else:
             cls_cat1 = ohe.fit_transform(self.df[one_hot_cols]).toarray()
             df1_cat = pd.DataFrame(data=cls_cat1, columns=ohe.get_feature_names(one_hot_cols).tolist())
-            cls_cat2 = ohe.fit_transform(self.df2[one_hot_cols]).toarray()
+            cls_cat2 = ohe.transform(self.df2[one_hot_cols]).toarray()
             df2_cat = pd.DataFrame(data=cls_cat2, columns=ohe.get_feature_names(one_hot_cols).tolist())
         if num_cols is None:
             num_cols = []
@@ -722,6 +719,14 @@ class FeatureHandling2(FeatureHandling):
 
         cls_rest = list(set(self.df.columns.tolist()) - set(num_cols) - set(one_hot_cols) - set(ordinal_cols))
 
-        df_encoded = pd.concat([df1_num, df1_cat, df1_ord, self.df[cls_rest]], axis=1)
-        df2_encoded = pd.concat([df2_num, df2_cat, df2_ord, self.df2[cls_rest]], axis=1)
-        return df_encoded, df2_encoded
+        df_encoded = pd.concat(
+            [df1_num.reset_index(drop=True), df1_cat.reset_index(drop=True), df1_ord.reset_index(drop=True),
+             self.df[cls_rest].copy().reset_index(drop=True)], axis=1)
+        df2_encoded = pd.concat(
+            [df2_num.reset_index(drop=True), df2_cat.reset_index(drop=True), df2_ord.reset_index(drop=True),
+             self.df2[cls_rest].copy().reset_index(drop=True)], axis=1)
+
+        if return_encoders:
+            return df_encoded, df2_encoded, ss, oe, ohe
+        else:
+            return df_encoded, df2_encoded

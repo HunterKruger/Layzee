@@ -14,6 +14,11 @@ class DataframeObserver:
     # test passed
     @staticmethod
     def read_df_info(df, return_result=False):
+        """
+        Print general stats of a DataFrame.
+        :param df: a DataFrame
+        :param return_result: return stats in a dict if True
+        """
         print('------------------')
         print(str(df.shape[0]) + ' rows, ' + str(df.shape[1]) + ' columns.')
         print('------------------')
@@ -36,12 +41,13 @@ class DataframeObserver:
     @staticmethod
     def describe_cat_col(df, col_name, top_n=None, plot_size_x=8, plot_size_y=6, return_result=False):
         """
-        Describe basic stats of a categorical column in a DataFrame
-        df: a DataFrame
-        col_name: column name
-        top_N: keep top N classes in count table, plot only top N classes
-        plot_size_x: size of plot in x-axis
-        plot_size_y: size of plot in y-axis
+        Describe basic stats of a categorical column in a DataFrame.
+        :param df: a DataFrame
+        :param col_name: column name
+        :param top_n: keep top N classes in count table, plot only top N classes
+        :param plot_size_x: size of plot in x-axis
+        :param plot_size_y: size of plot in y-axis
+        :param return_result: return stats in a dict if True
         """
 
         result = dict()
@@ -73,7 +79,7 @@ class DataframeObserver:
         print(count_table_info)
         print('-------------------------------------')
         # nan will not be plotted
-        fig, ax = plt.subplots(figsize=(plot_size_x, plot_size_y))
+        plt.subplots(figsize=(plot_size_x, plot_size_y))
         sns.countplot(y=col_name, data=df, order=df[col_name].value_counts().nlargest(top_n).index)
 
         if return_result:
@@ -83,8 +89,10 @@ class DataframeObserver:
     @staticmethod
     def describe_num_col(df, col_name, return_result=False):
         """
-        Describe basic stats of a categorical column in a DataFrame
-        col_name: column name
+        Describe basic stats of a categorical column in a DataFrame.
+        :param df: a DataFrame
+        :param col_name: column name
+        :param return_result: return stats in a dict if True
         """
 
         Q1 = df[col_name].quantile(q=0.25)
@@ -129,31 +137,45 @@ class DataframeObserver:
 
     # test passed
     @staticmethod
-    def missing_pattern(df, top_n=5, plot=True):
+    def missing_pattern(df, top_n=5, plot=True, only_missing_col=False):
         """
         Check the missing patterns of a DataFrame
+        :param df: a DataFrame
         :param top_n: the top n patterns to be displayed
-        :param plot: plot heatmap to missing partern if True
+        :param plot: plot heatmap to missing pattern if True
+        :param only_missing_col: only plot and print columns with missing values
         """
         if plot:
-            sns.heatmap(df[df.columns[df.isnull().any()].tolist()].isnull(), yticklabels=False, cmap='hot_r',
-                        cbar=False)
-        df_miss = df.applymap(lambda x: '1' if pd.isna(x) else '0')
+            if only_missing_col:
+                sns.heatmap(df[df.columns[df.isnull().any()].tolist()].isnull(),
+                            yticklabels=False, cmap='hot_r', cbar=False)
+            else:
+                sns.heatmap(df[df.columns.tolist()].isnull(),
+                            yticklabels=False, cmap='hot_r', cbar=False)
+        if only_missing_col:
+            df_miss = df[df.columns[df.isnull().any()]].applymap(lambda x: '1' if pd.isna(x) else '0')
+        else:
+            df_miss = df.applymap(lambda x: '1' if pd.isna(x) else '0')
         row_miss = df_miss.apply(lambda x: '-'.join(x.values), axis=1)
         print('-------------------------------------------------')
-        print(df.columns.tolist())
+        if only_missing_col:
+            print(df.columns[df.isnull().any()].tolist())
+        else:
+            print(df.columns.tolist())
         print(row_miss.value_counts().nlargest(top_n))
 
     # test passed
     @staticmethod
     def correlation(df, col_list=None, method='pearson', threshold=1, plot_size_x=7, plot_size_y=6):
         """
-        col_list: list of columns to calculate correlations
-        method: 'pearson', 'spearman', 'kendall'
-        size: plot size
-        threshold: return pairs with abs(corr)>threshold if specified
+        :param df: a DataFrame
+        :param col_list: list of columns to calculate correlations
+        :param method: 'pearson', 'spearman', 'kendall'
+        :param plot_size_x: plot size in x axis
+        :param plot_size_y: plot size in y axis
+        :param threshold: return pairs with abs(corr)>threshold if specified
         """
-        fig, ax = plt.subplots(figsize=(plot_size_x, plot_size_y))
+        plt.subplots(figsize=(plot_size_x, plot_size_y))
         if col_list is None:
             corr_cols = df.columns.tolist()
             corr = df.corr(method)
