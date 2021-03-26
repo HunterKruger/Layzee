@@ -1,3 +1,5 @@
+import datetime
+
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, ShuffleSplit
 from sklearn.svm import SVC, SVR
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
@@ -113,6 +115,8 @@ class Modeling:
             best_model: best model object
             best_score:  best score in the specified metric
         """
+        start = datetime.datetime.now()
+
         internal_model = self.model_mapping(model, class_weight)
         optimizer = None
         if strategy == 'grid' and 0 < self.cv < 1:  # grid, hold-out
@@ -158,6 +162,9 @@ class Modeling:
         best_model = optimizer.best_estimator_
         best_score = optimizer.best_score_
         best_params = optimizer.best_params_
+
+        end = datetime.datetime.now()
+        print(end - start)
 
         if self.task == 'reg':
             y_score = best_model.predict(self.X_test)

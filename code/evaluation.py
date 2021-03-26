@@ -54,10 +54,11 @@ class Evaluation:
         :param model: a linear model object such as Linear Regression, Logistic Regression
         """
         print('intercept=' + str(model.intercept_[0]))
-        pack = sorted(zip(features, model.coef_.tolist()[0]), key=lambda tup: tup[1], reverse=True)
-        data, idx = zip(*pack)
+        pack = sorted(zip(features, model.coef_.tolist()[0], [abs(x) for x in model.coef_.tolist()[0]]),
+                      key=lambda tup: tup[2], reverse=True)
+        idx, data, data_abs = zip(*pack)
         ss = pd.Series(data=data, index=idx)
-        sns.barplot(x=ss.index, y=ss.values, orient='h')
+        sns.barplot(x=ss.values, y=ss.index)
 
 
 class RegEvaluation(Evaluation):

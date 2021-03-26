@@ -166,14 +166,14 @@ class DataframeObserver:
 
     # test passed
     @staticmethod
-    def correlation(df, col_list=None, method='pearson', threshold=1, plot_size_x=7, plot_size_y=6):
+    def correlation(df, col_list=None, method='pearson', threshold=None, plot_size_x=7, plot_size_y=6):
         """
         :param df: a DataFrame
         :param col_list: list of columns to calculate correlations
         :param method: 'pearson', 'spearman', 'kendall'
         :param plot_size_x: plot size in x axis
         :param plot_size_y: plot size in y axis
-        :param threshold: return pairs with abs(corr)>threshold if specified
+        :param threshold: 0~1, return pairs with abs(corr)>threshold if specified
         """
         plt.subplots(figsize=(plot_size_x, plot_size_y))
         if col_list is None:
@@ -187,10 +187,10 @@ class DataframeObserver:
 
         result = []
 
-        if 0 < threshold < 1:
+        if threshold:
             for i in range(len(corr_cols)):
-                for j in range(len(corr_cols)):
+                for j in range(i):
                     corr_ij = corr.loc[corr_cols[i], corr_cols[j]]
-                    if j < i and corr_ij >= threshold:
+                    if abs(corr_ij) >= threshold:
                         result.append((corr_cols[i], corr_cols[j], corr_ij))
         return result
