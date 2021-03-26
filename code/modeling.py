@@ -11,6 +11,7 @@ from sklearn.ensemble import GradientBoostingClassifier, ExtraTreesClassifier, G
 from xgboost import XGBClassifier, XGBRegressor
 from lightgbm import LGBMClassifier, LGBMRegressor
 from catboost import CatBoostClassifier, CatBoostRegressor
+from sklearn.calibration import CalibratedClassifierCV
 
 
 class Modeling:
@@ -29,9 +30,9 @@ class Modeling:
             'reg' for regression
         :param metric: optimize model hyper-parameters for this metric
             see https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter
-        :param cv: if >0 and <1, simple train/validation split, indicate validation set ratio,
-                   if > 1 and int, cross validation, indicate folds,
-        :param random_state: random state
+        :param cv: if > 0 and < 1, simple train/validation split, indicate validation set ratio,
+                   if > 1 and int, cross validation, indicate folds
+        :param random_state: random state seed
         """
         self.X_train = X_train.copy()
         self.y_train = y_train.copy()
@@ -44,21 +45,21 @@ class Modeling:
 
     def model_mapping(self, model, class_weight):
         bin_model_mapper = {
-            'svm': SVC(probability=True, class_weight=class_weight),
+            'svm': SVC(probability=True, class_weight=class_weight, random_state=self.random_state),
             'rf': RandomForestClassifier(random_state=self.random_state, class_weight=class_weight),
             'gb': GradientBoostingClassifier(random_state=self.random_state),
             'et': ExtraTreesClassifier(random_state=self.random_state, class_weight=class_weight),
             'dt': DecisionTreeClassifier(random_state=self.random_state, class_weight=class_weight),
             'lr': LogisticRegression(random_state=self.random_state, class_weight=class_weight),
-            'knn': KNeighborsClassifier(),  # how to set class_weight? No random_state
+            'knn': KNeighborsClassifier(),  # how to set class_weight? No random_state?
             'sgd': SGDClassifier(random_state=self.random_state, class_weight=class_weight),
-            'xgb': XGBClassifier(objective='binary:logistic'),
-            'lgb': LGBMClassifier(),
+            'xgb': XGBClassifier(objective='binary:logistic', random_state=self.random_state),
+            'lgb': LGBMClassifier(class_weight=class_weight, random_state=self.random_state),
             'cat': CatBoostClassifier(random_state=self.random_state, auto_class_weights=class_weight)
         }
 
         mlt_model_mapper = {
-            'svm': SVC(probability=True, class_weight=class_weight),
+            'svm': SVC(probability=True, class_weight=class_weight, random_state=self.random_state),
             'rf': RandomForestClassifier(random_state=self.random_state, class_weight=class_weight),
             'gb': GradientBoostingClassifier(random_state=self.random_state),
             'et': ExtraTreesClassifier(random_state=self.random_state, class_weight=class_weight),
@@ -66,8 +67,8 @@ class Modeling:
             'lr': LogisticRegression(random_state=self.random_state, class_weight=class_weight),
             'knn': KNeighborsClassifier(),
             'sgd': SGDClassifier(random_state=self.random_state, class_weight=class_weight),
-            'xgb': XGBClassifier(objective='multi:softprob'),
-            'lgb': LGBMClassifier(),
+            'xgb': XGBClassifier(objective='multi:softprob', random_state=self.random_state),
+            'lgb': LGBMClassifier(class_weight=class_weight, random_state=self.random_state),
             'cat': CatBoostClassifier(random_state=self.random_state, auto_class_weights=class_weight)
         }
 
@@ -79,11 +80,11 @@ class Modeling:
             'dt': DecisionTreeRegressor(random_state=self.random_state),
             'knn': KNeighborsRegressor(),
             'sgd': SGDRegressor(random_state=self.random_state),
-            'xgb': XGBRegressor(objective='reg:squarederror'),
+            'xgb': XGBRegressor(objective='reg:squarederror', random_state=self.random_state),
             'lasso': Lasso(random_state=self.random_state),
             'ridge': Ridge(random_state=self.random_state),
             'lr': LinearRegression(),
-            'lgb': LGBMRegressor(),
+            'lgb': LGBMRegressor(random_state=self.random_state),
             'cat': CatBoostRegressor(random_state=self.random_state)
         }
         if self.task == 'reg':
@@ -93,7 +94,7 @@ class Modeling:
         if self.task == 'mlt':
             return mlt_model_mapper[model]
 
-    def modeling(self, model, hp, strategy='grid', max_iter=10, n_jobs=-1, class_weight=None):
+    def modeling(self, model, hp, strategy='grid', max_iter=10, n_jobs=-1, class_weight=None, calibration=None):
         """
         Modeling with a model and its specified hyper-parameters.
         :param model: a model name
@@ -109,11 +110,17 @@ class Modeling:
             'balanced': The "balanced" mode uses the values of y to automatically adjust
                         weights inversely proportional to class frequencies in the input data
                         as ``n_samples / (n_classes * np.bincount(y))``
+        :param calibration: calibrate model output to more accurate probability,
+                            not available for regression tasks,
+                            no need for LogisticRegression or SVC models
+            None: no calibration
+            'sigmoid': platt scaling
+            'isotonic': isotonic regression
         :return
             y_score: prediction of the best model, 1d array-like
             y_proba: prediction of the best model in probability, for each label (only for multiclass task)
             best_model: best model object
-            best_score:  best score in the specified metric
+            best_score: best score in the specified metric
         """
         start = datetime.datetime.now()
 
@@ -163,16 +170,31 @@ class Modeling:
         best_score = optimizer.best_score_
         best_params = optimizer.best_params_
 
+        # calibration:
+        calib_clf = None
+        if calibration == 'sigmoid':
+            calib_clf = CalibratedClassifierCV(base_estimator=best_model, method='sigmoid', cv='prefit')
+            calib_clf.fit(self.X_test, self.y_test)
+        if calibration == 'isotonic':
+            calib_clf = CalibratedClassifierCV(base_estimator=best_model, method='isotonic', cv='prefit')
+            calib_clf.fit(self.X_test, self.y_test)
+
         end = datetime.datetime.now()
         print(end - start)
 
         if self.task == 'reg':
-            y_score = best_model.predict(self.X_test)
+            y_score = calib_clf.predict(self.X_test)
             return y_score, best_model, best_score, best_params
         if self.task == 'bin':
-            y_score = best_model.predict_proba(self.X_test)
+            if calibration is None:
+                y_score = best_model.predict_proba(self.X_test)
+            else:
+                y_score = calib_clf.predict_proba(self.X_test)
             return y_score[:, 1], best_model, best_score, best_params
         if self.task == 'mlt':
             y_score = best_model.predict(self.X_test)
-            y_proba = best_model.predict_proba(self.X_test)
+            if calibration is None:
+                y_proba = best_model.predict_proba(self.X_test)
+            else:
+                y_proba = calib_clf.predict_proba(self.X_test)
             return y_score, y_proba, best_model, best_score, best_params

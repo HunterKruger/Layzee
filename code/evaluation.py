@@ -12,7 +12,7 @@ from sklearn.metrics import \
     accuracy_score, hamming_loss, matthews_corrcoef, \
     confusion_matrix, roc_curve, \
     explained_variance_score, mean_squared_error, \
-    mean_absolute_error, mean_absolute_percentage_error, r2_score
+    mean_absolute_error, mean_absolute_percentage_error, r2_score, classification_report
 
 
 class Evaluation:
@@ -127,7 +127,7 @@ class RegEvaluation(Evaluation):
         else:
             print('Error is not normally distributed.')
         print('--------------------------------------')
-        print('Error plot in 2%-98% quantile.')
+        print('Error plot between 2% & 98% quantile.')
         sns.displot(data=error_clipped)
 
         if self.return_result:
@@ -200,13 +200,47 @@ class BinClsEvaluation(Evaluation):
             'gain_fp']
         to_display['gain_per_record'] = to_display['gain_all'] / len(self.y_true)
 
-        acc = accuracy_score(self.y_true, self.y_score > cutoff)
-        pcs = precision_score(self.y_true, self.y_score > cutoff)
-        rec = recall_score(self.y_true, self.y_score > cutoff)
-        f1 = f1_score(self.y_true, self.y_score > cutoff)
+        to_display['acc'] = accuracy_score(self.y_true, self.y_score > cutoff)
+        to_display['pcs'] = precision_score(self.y_true, self.y_score > cutoff)
+        to_display['rec'] = recall_score(self.y_true, self.y_score > cutoff)
+        to_display['f1'] = f1_score(self.y_true, self.y_score > cutoff)
 
-        for k, v in to_display.items():
-            print(str(k) + ': ' + str(v))
+        print('Cutoff = ' + str(cutoff))
+        print('--------Confusion Matrix-----------')
+        cols = ['Predicted_1', 'Predicted_0']
+        idx = ['Actual_1', 'Actual_0']
+        cm = confusion_matrix(self.y_true, self.y_score > cutoff)
+        record_count = pd.DataFrame(data=cm, columns=cols, index=idx)
+        print(record_count)
+        print('-----------------------------------')
+        cols = ['Predicted_1', 'Predicted_0']
+        idx = ['Actual_1%', 'Actual_0%']
+        cm2 = confusion_matrix(self.y_true, self.y_score > cutoff, normalize='true')
+        pct_actual = pd.DataFrame(data=np.round(cm2, 2), columns=cols, index=idx)
+        print(pct_actual)
+        print('-----------------------------------')
+        cols = ['Predicted_1%', 'Predicted_0%']
+        idx = ['Actual_1', 'Actual_0']
+        cm3 = confusion_matrix(self.y_true, self.y_score > cutoff, normalize='pred')
+        pct_pred = pd.DataFrame(data=np.round(cm3, 2), columns=cols, index=idx)
+        print(pct_pred)
+        print('-------------Cost Matrix-----------')
+        print('If model predict 1 and value 1, the gain is ' +
+              str(cost_tp) + ' x ' + str(to_display['tp']) + ' = ' + str(to_display['gain_tp']))
+        print('If model predict 1 and value 0, the gain is ' +
+              str(cost_fp) + ' x ' + str(to_display['fp']) + ' = ' + str(to_display['gain_fp']))
+        print('If model predict 0 and value 1, the gain is ' +
+              str(cost_fn) + ' x ' + str(to_display['fn']) + ' = ' + str(to_display['gain_fn']))
+        print('If model predict 0 and value 0, the gain is ' +
+              str(cost_tn) + ' x ' + str(to_display['tn']) + ' = ' + str(to_display['gain_tn']))
+        print('Average gain per record ' + str(np.round(to_display['gain_per_record'], 2)) + ' x ' + str(
+            len(self.y_true)) + ' = ' + str(to_display['gain_all']))
+        print('-----------------------------------')
+
+        ss = pd.Series(data=[to_display['acc'], to_display['pcs'], to_display['rec'], to_display['f1']],
+                       index=['Accuracy', 'Precision', 'Recall', 'F1_score'])
+        sns.barplot(x=ss.values, y=ss.index, orient='h')
+        plt.xlim(0, 1)
 
         if self.return_result:
             return to_display
@@ -248,6 +282,7 @@ class BinClsEvaluation(Evaluation):
         df_plot = pd.DataFrame(data=[self.y_score, self.y_true]).T
         df_plot.columns = ['proba', 'label']
         sns.displot(data=df_plot, x="proba", hue="label", kind='kde')
+        plt.xlim(0, 1)
 
     def calibration_curve(self, bins=10):
         fraction_of_positives, mean_predicted_value = calibration_curve(self.y_true, self.y_score, n_bins=bins)
@@ -297,7 +332,7 @@ class MltClsEvaluation(Evaluation):
         :param y_score: target prediction, encoded, list or Series of int
         :param y_true: ground truth of target, encoded, list or Series of int
         :param labels: list of labels, the order matters
-                eg: ['Red,'Green','Yellow'], encoded to [0,1,2] by default
+                eg: labels = ['Red,'Green','Yellow'], encoded to [0,1,2] by default
         :param y_proba:
                 2-d array like, shape = (n_samples, n_classes)
                     eg:    Red | Green | Yellow
@@ -314,6 +349,7 @@ class MltClsEvaluation(Evaluation):
             label2num[lb] = idx
 
         self.label2num = label2num
+        self.labels = labels
         self.num2label = {v: k for k, v in label2num.items()}
         self.y_proba = y_proba
 
@@ -335,6 +371,8 @@ class MltClsEvaluation(Evaluation):
         cm3 = confusion_matrix(self.y_true, self.y_score, normalize='pred')
         pct_pred = pd.DataFrame(data=np.round(cm3, 2), columns=cols, index=idx)
         print(pct_pred)
+        print('------------------------------')
+        print(classification_report(self.y_true, self.y_score, target_names=self.labels))
 
     def calibration_curve(self, label, bins=10):
         """
@@ -400,6 +438,7 @@ class MltClsEvaluation(Evaluation):
         df_plot.columns = ['proba', 'label']
         print('1 for ' + label + ', 0 for not ' + label)
         sns.displot(data=df_plot, x="proba", hue="label", kind='kde')
+        plt.xlim(0, 1)
 
     def detailed_metrics(self):
         to_display = dict()
