@@ -6,13 +6,9 @@ from scipy.stats.stats import pearsonr
 from scipy.stats import shapiro
 from sklearn.calibration import calibration_curve
 from matplotlib import pyplot as plt
-from sklearn.metrics import \
-    log_loss, roc_auc_score, brier_score_loss, \
-    precision_score, recall_score, f1_score, \
-    accuracy_score, hamming_loss, matthews_corrcoef, \
-    confusion_matrix, roc_curve, \
-    explained_variance_score, mean_squared_error, \
-    mean_absolute_error, mean_absolute_percentage_error, r2_score, classification_report
+from sklearn.metrics import log_loss, roc_auc_score, brier_score_loss, precision_score, recall_score, f1_score, \
+    accuracy_score, hamming_loss, matthews_corrcoef, confusion_matrix, roc_curve, explained_variance_score, \
+    mean_squared_error, mean_absolute_error, mean_absolute_percentage_error, r2_score, classification_report
 
 
 class Evaluation:
@@ -404,7 +400,6 @@ class MltClsEvaluation(Evaluation):
         else:
             ns_probs = [0 for _ in range(len(self.y_true))]
             # calculate scores
-
             y_score_temp = self.y_proba[:, self.label2num[label]]  # proba of label
             y_true_temp = [1 if num == self.label2num[label] else 0 for num in self.y_true]
 
@@ -449,7 +444,6 @@ class MltClsEvaluation(Evaluation):
         to_display['Hamming_Loss'] = hamming_loss(self.y_true, self.y_score)
 
         if self.y_proba is not None:
-            # temp_y_proba = np.array([ls for ls in self.y_proba.values()]).T.tolist()
             to_display['Log_loss'] = log_loss(self.y_true, self.y_proba)
             to_display['Auc_Roc'] = roc_auc_score(self.y_true, self.y_proba, multi_class='ovr')
 
