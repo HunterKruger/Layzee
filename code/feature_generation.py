@@ -5,6 +5,9 @@ from sklearn.preprocessing import PolynomialFeatures
 
 
 class FeatureGeneration:
+    """
+    Several feature generation static methods.
+    """
 
     def __init__(self):
         pass

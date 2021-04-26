@@ -6,10 +6,14 @@ from sklearn.preprocessing import StandardScaler, OrdinalEncoder, OneHotEncoder
 class FeatureHandling:
     """
     Several feature handling methods.
-    Dataframe 'df' will be fit then transformed.
+    This class supports only one dataframe, it will be fit then transformed.
     """
 
     def __init__(self, df, drop_origin=True):
+        """
+        :param df: a dataframe to be fit then transformed
+        :param drop_origin: drop origin feature if new ones are created
+        """
         self.df = df.copy()
         self.drop_origin = drop_origin
 
@@ -364,11 +368,16 @@ class FeatureHandling:
 class FeatureHandling2(FeatureHandling):
     """
     Several feature handling methods.
-    1st dataframe will be fit then transformed.
-    2st dataframe will be transformed based on the 1st dataframe.
+    1st dataframe (usually training set) will be fit then transformed.
+    2st dataframe (usually test set) will be transformed based on the 1st dataframe.
     """
 
     def __init__(self, df, df2, drop_origin=True):
+        """
+        :param df: a dataframe to be fit then transformed, usually the training set
+        :param df: a dataframe to be transformed, usually the test set
+        :param drop_origin: drop origin feature if new ones are created
+        """
         super().__init__(df, drop_origin)
         self.df2 = df2.copy()
 

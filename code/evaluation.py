@@ -12,6 +12,10 @@ from sklearn.metrics import log_loss, roc_auc_score, brier_score_loss, precision
 
 
 class Evaluation:
+    """
+    Interpret model results in different aspects for regression and classification tasks.
+    """
+
     def __init__(self, y_score, y_true, return_result=False):
         """
         Constructor.

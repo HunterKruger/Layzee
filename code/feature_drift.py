@@ -11,6 +11,9 @@ pd.options.display.max_rows = 100
 
 
 class FeatureDrift:
+    """
+    Visualize and detect feature drift.
+    """
 
     def __init__(self):
         pass
@@ -18,8 +21,9 @@ class FeatureDrift:
     @staticmethod
     def adversarial_detection(df_train, df_test, target_col=None, auroc_tolerance=0.005, random_state=1234):
         """
-        By training an Adversarial Classifier to determine which features is drifted based on auc_roc.
-        The most important feature will be dropped until auc_roc reduces into specified tolerance range.
+        By training an Adversarial Classifier to determine whether there is feature drift.
+        The most important feature will be dropped and the Adversarial Classifier will be retrained at each iteration
+        until auc_roc reduces into the specified tolerance range.
         Reference: https://zhuanlan.zhihu.com/p/349432455
         :param df_train: training set; remember to drop id features!
         :param df_test: test set; remember to drop id features!
@@ -83,15 +87,17 @@ class FeatureDrift:
                 features_to_drop.append(first_feature)
             else:
                 print('No feature drift detected  (roc = ' + str(round(roc, 4)) + ')')
+                print('These features have been dropped!')
                 print(features_to_drop)
-                break
+                return features_to_drop
 
     @staticmethod
-    def categorical_detection(df1, df2, col_name, top_n=None, plot_size_x=12, plot_size_y=12, return_result=False):
+    def categorical_detection(df_train, df_test, col_name, top_n=None, plot_size_x=12, plot_size_y=12,
+                              return_result=False):
         """
         Compare a numerical feature in 2 dataframes.
-        :param df1: training set
-        :param df2: test set
+        :param df_train: training set
+        :param df_test: test set
         :param col_name: column name of this categorical feature
         :param top_n: top n classes to be counted and plotted
         :param plot_size_x: plot size in x-axis
@@ -101,23 +107,23 @@ class FeatureDrift:
         """
 
         result1 = dict()
-        result1['Type'] = str(df1[col_name].dtype)
-        result1['Rows'] = df1.shape[0]
-        result1['Distinct'] = df1[col_name].nunique()
-        result1['Missing'] = df1[col_name].isnull().sum()
-        result1['Missing%'] = df1[col_name].isnull().sum() / df1.shape[0]
+        result1['Type'] = str(df_train[col_name].dtype)
+        result1['Rows'] = df_train.shape[0]
+        result1['Distinct'] = df_train[col_name].nunique()
+        result1['Missing'] = df_train[col_name].isnull().sum()
+        result1['Missing%'] = df_train[col_name].isnull().sum() / df_train.shape[0]
 
-        print('-----------------df1 summary--------------------------')
+        print('-----------------df_train summary--------------------------')
         for k, v in result1.items():
             print(str(k) + ': ' + str(v))
 
         if top_n is None:
-            top_n = len(df1[col_name].value_counts())
-        print('-----------------df1 top ' + str(top_n) + ' values:--------------------')
+            top_n = len(df_train[col_name].value_counts())
+        print('-----------------df_train top ' + str(top_n) + ' values:--------------------')
         count_table_info1 = pd.concat([
-            df1[col_name].value_counts().nlargest(top_n),
-            df1[col_name].value_counts(normalize=True).nlargest(top_n),
-            df1[col_name].value_counts(normalize=True).nlargest(top_n).cumsum()],
+            df_train[col_name].value_counts().nlargest(top_n),
+            df_train[col_name].value_counts(normalize=True).nlargest(top_n),
+            df_train[col_name].value_counts(normalize=True).nlargest(top_n).cumsum()],
             axis=1)
 
         count_table_info1.columns = ['Count', '%', 'Cum.%']
@@ -127,24 +133,24 @@ class FeatureDrift:
         print(count_table_info1)
 
         result2 = dict()
-        result2['Type'] = str(df2[col_name].dtype)
-        result2['Rows'] = df2.shape[0]
-        result2['Distinct'] = df2[col_name].nunique()
-        result2['Missing'] = df2[col_name].isnull().sum()
-        result2['Missing%'] = df2[col_name].isnull().sum() / df2.shape[0]
+        result2['Type'] = str(df_test[col_name].dtype)
+        result2['Rows'] = df_test.shape[0]
+        result2['Distinct'] = df_test[col_name].nunique()
+        result2['Missing'] = df_test[col_name].isnull().sum()
+        result2['Missing%'] = df_test[col_name].isnull().sum() / df_test.shape[0]
 
-        print('-----------------df2 summary--------------------------')
+        print('-----------------df_test summary--------------------------')
         for k, v in result2.items():
             print(str(k) + ': ' + str(v))
 
         if top_n is None:
-            top_n = len(df2[col_name].value_counts())
+            top_n = len(df_test[col_name].value_counts())
 
-        print('-----------------df2 top ' + str(top_n) + ' values:--------------------')
+        print('-----------------df_test top ' + str(top_n) + ' values:--------------------')
         count_table_info2 = pd.concat([
-            df2[col_name].value_counts().nlargest(top_n),
-            df2[col_name].value_counts(normalize=True).nlargest(top_n),
-            df2[col_name].value_counts(normalize=True).nlargest(top_n).cumsum()], axis=1)
+            df_test[col_name].value_counts().nlargest(top_n),
+            df_test[col_name].value_counts(normalize=True).nlargest(top_n),
+            df_test[col_name].value_counts(normalize=True).nlargest(top_n).cumsum()], axis=1)
 
         count_table_info2.columns = ['Count', '%', 'Cum.%']
         count_table_info2 = count_table_info2.sort_values(by='Count', ascending=False)
@@ -164,39 +170,39 @@ class FeatureDrift:
             return result1, count_table_info1, result2, count_table_info2
 
     @staticmethod
-    def numerical_detection(df1, df2, col_name, plot_size_x=10, plot_size_y=5, return_result=False):
+    def numerical_detection(df_train, df_test, col_name, plot_size_x=10, plot_size_y=5, return_result=False):
         """
         Compare a numerical feature in 2 dataframes.
-        :param df1: training set
-        :param df2: test set
+        :param df_train: training set
+        :param df_test: test set
         :param col_name: column name of this categorical feature
         :param plot_size_x: plot size in x-axis
         :param plot_size_y: plot size in y-axis
         :param return_result: return result if True
         :return: all plotted stats
         """
-        q1_1 = df1[col_name].quantile(q=0.25)
-        q3_1 = df1[col_name].quantile(q=0.75)
+        q1_1 = df_train[col_name].quantile(q=0.25)
+        q3_1 = df_train[col_name].quantile(q=0.75)
         iqr_1 = q3_1 - q1_1
         upper_bound_1 = 1.5 * iqr_1 + q3_1
         lower_bound_1 = q1_1 - 1.5 * iqr_1
-        outliers_1 = len(df1[(df1[col_name] < lower_bound_1) | (df1[col_name] > upper_bound_1)])
+        outliers_1 = len(df_train[(df_train[col_name] < lower_bound_1) | (df_train[col_name] > upper_bound_1)])
 
         result1 = dict()
-        result1['Type'] = df1[col_name].dtype
-        result1['Rows'] = df1.shape[0]
-        result1['Min'] = df1[col_name].min()
-        result1['Max'] = df1[col_name].max()
-        result1['Mean'] = df1[col_name].mean()
-        result1['Median'] = df1[col_name].median()
-        result1['Mode'] = df1[col_name].value_counts().index[0]
-        result1['StdDev'] = df1[col_name].std()
-        result1['Distinct'] = df1[col_name].nunique()
-        result1['Sum'] = df1[col_name].sum()
-        result1['Missing'] = df1[col_name].isnull().sum()
-        result1['Missing%'] = df1[col_name].isnull().sum() / df1.shape[0]
-        result1['Skewness'] = df1[col_name].skew()
-        result1['Kurtosis'] = df1[col_name].kurtosis()
+        result1['Type'] = df_train[col_name].dtype
+        result1['Rows'] = df_train.shape[0]
+        result1['Min'] = df_train[col_name].min()
+        result1['Max'] = df_train[col_name].max()
+        result1['Mean'] = df_train[col_name].mean()
+        result1['Median'] = df_train[col_name].median()
+        result1['Mode'] = df_train[col_name].value_counts().index[0]
+        result1['StdDev'] = df_train[col_name].std()
+        result1['Distinct'] = df_train[col_name].nunique()
+        result1['Sum'] = df_train[col_name].sum()
+        result1['Missing'] = df_train[col_name].isnull().sum()
+        result1['Missing%'] = df_train[col_name].isnull().sum() / df_train.shape[0]
+        result1['Skewness'] = df_train[col_name].skew()
+        result1['Kurtosis'] = df_train[col_name].kurtosis()
         result1['Outliers'] = outliers_1
         result1['Q1'] = q1_1
         result1['Q3'] = q3_1
@@ -204,28 +210,28 @@ class FeatureDrift:
         result1['Down'] = lower_bound_1
         result1['Up'] = upper_bound_1
 
-        q1_2 = df2[col_name].quantile(q=0.25)
-        q3_2 = df2[col_name].quantile(q=0.75)
+        q1_2 = df_test[col_name].quantile(q=0.25)
+        q3_2 = df_test[col_name].quantile(q=0.75)
         iqr_2 = q3_2 - q1_2
         upper_bound_2 = 1.5 * iqr_2 + q3_2
         lower_bound_2 = q1_2 - 1.5 * iqr_2
-        outliers_2 = len(df2[(df2[col_name] < lower_bound_2) | (df2[col_name] > upper_bound_2)])
+        outliers_2 = len(df_test[(df_test[col_name] < lower_bound_2) | (df_test[col_name] > upper_bound_2)])
 
         result2 = dict()
-        result2['Type'] = df2[col_name].dtype
-        result2['Rows'] = df2.shape[0]
-        result2['Min'] = df2[col_name].min()
-        result2['Max'] = df2[col_name].max()
-        result2['Mean'] = df2[col_name].mean()
-        result2['Median'] = df2[col_name].median()
-        result2['Mode'] = df2[col_name].value_counts().index[0]
-        result2['StdDev'] = df2[col_name].std()
-        result2['Distinct'] = df2[col_name].nunique()
-        result2['Sum'] = df2[col_name].sum()
-        result2['Missing'] = df2[col_name].isnull().sum()
-        result2['Missing%'] = df2[col_name].isnull().sum() / df2.shape[0]
-        result2['Skewness'] = df2[col_name].skew()
-        result2['Kurtosis'] = df2[col_name].kurtosis()
+        result2['Type'] = df_test[col_name].dtype
+        result2['Rows'] = df_test.shape[0]
+        result2['Min'] = df_test[col_name].min()
+        result2['Max'] = df_test[col_name].max()
+        result2['Mean'] = df_test[col_name].mean()
+        result2['Median'] = df_test[col_name].median()
+        result2['Mode'] = df_test[col_name].value_counts().index[0]
+        result2['StdDev'] = df_test[col_name].std()
+        result2['Distinct'] = df_test[col_name].nunique()
+        result2['Sum'] = df_test[col_name].sum()
+        result2['Missing'] = df_test[col_name].isnull().sum()
+        result2['Missing%'] = df_test[col_name].isnull().sum() / df_test.shape[0]
+        result2['Skewness'] = df_test[col_name].skew()
+        result2['Kurtosis'] = df_test[col_name].kurtosis()
         result2['Outliers'] = outliers_2
         result2['Q1'] = q1_2
         result2['Q3'] = q3_2
@@ -234,18 +240,18 @@ class FeatureDrift:
         result2['Up'] = upper_bound_2
 
         result_df = pd.DataFrame(index=result1.keys())
-        result_df['df1'] = result1.values()
-        result_df['df2'] = result2.values()
+        result_df['df_train'] = result1.values()
+        result_df['df_test'] = result2.values()
 
         print(result_df)
 
-        plot_min = min(df1[col_name].min(), df2[col_name].min())
-        plot_max = max(df1[col_name].max(), df2[col_name].max())
+        plot_min = min(df_train[col_name].min(), df_test[col_name].min())
+        plot_max = max(df_train[col_name].max(), df_test[col_name].max())
 
-        df_plot_1 = df1[col_name].to_frame()
-        df_plot_1['label'] = 'df1'
-        df_plot_2 = df2[col_name].to_frame()
-        df_plot_2['label'] = 'df2'
+        df_plot_1 = df_train[col_name].to_frame()
+        df_plot_1['label'] = 'df_train'
+        df_plot_2 = df_test[col_name].to_frame()
+        df_plot_2['label'] = 'df_test'
         df_plot = pd.concat([df_plot_1, df_plot_2], axis=0)
         # print(df_plot)
         # sns.displot(data=df_plot, x=col_name, hue="label", kind='kde')
@@ -253,8 +259,8 @@ class FeatureDrift:
         fig, ax = plt.subplots(3, 1, figsize=(plot_size_x, plot_size_y))
         ax[0].set_xlim(plot_min, plot_max)
         ax[1].set_xlim(plot_min, plot_max)
-        sns.histplot(data=df1, x=col_name, kde=True, ax=ax[0])
-        sns.histplot(data=df2, x=col_name, kde=True, ax=ax[1])
+        sns.histplot(data=df_train, x=col_name, kde=True, ax=ax[0])
+        sns.histplot(data=df_test, x=col_name, kde=True, ax=ax[1])
         sns.boxplot(data=df_plot, x=col_name, y='label', ax=ax[2])
 
         if return_result:

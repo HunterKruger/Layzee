@@ -18,7 +18,6 @@ class Modeling:
 
     def __init__(self, X_train, X_test, y_train, y_test, task, metric, cv=3, random_state=1337):
         """
-        Constructor.
         Initialize data and hyper-parameter settings.
         :param X_train: training set features, DataFrame
         :param y_train: training set target, Series
@@ -28,7 +27,7 @@ class Modeling:
             'bin' for binary classification
             'mlt' for multi-class classification
             'reg' for regression
-        :param metric: optimize model hyper-parameters for this metric
+        :param metric: optimize model hyper-parameters for this metric during validation process
             see https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter
         :param cv: if > 0 and < 1, simple train/validation split, indicate validation set ratio,
                    if > 1 and int, cross validation, indicate folds
@@ -98,7 +97,7 @@ class Modeling:
         """
         Modeling with a model and its specified hyper-parameters.
         :param model: a model name
-        :param hp: a dictionary, key: hyper-param name, value: list or range of hyper-param
+        :param hp: a dictionary, key: hyper-parameter name, value: list or range of hyper-parameter
         :param strategy:
             'grid' for Grid search
             'random' for Random search
