@@ -6,7 +6,7 @@ from sklearn.preprocessing import StandardScaler, OrdinalEncoder, OneHotEncoder
 class FeatureHandling:
     """
     Several feature handling methods.
-    Dataframe will be fit then transformed.
+    Dataframe 'df' will be fit then transformed.
     """
 
     def __init__(self, df, drop_origin=True):
@@ -665,7 +665,7 @@ class FeatureHandling2(FeatureHandling):
     def general_encoder(self, num_cols=None, ordinal_cols=None, one_hot_cols=None, return_encoders=False, drop=None):
         """
         A general encoder to transform numerical, categorical and ordinal features.
-        :param drop:
+        :param drop: for one-hot encoding
                 - None : retain all features (the default).
                 - 'first' : drop the first category in each feature. If only one
                             category is present, the feature will be dropped entirely.

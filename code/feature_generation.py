@@ -15,9 +15,11 @@ class FeatureGeneration:
         """
         Generate A+B and A-B features for numerical features
         :param df: DataFrame
-        :param num_cols: list of numerical columns to generate new features
-        :param return_cols: choose 'True' to return generated feature list
+        :param num_cols:
+            list of numerical columns to generate new features;
+            automatically choose all numerical features if 'auto'
         :param drop_origin: choose 'True' to drop 'num_cols' in 'df'
+        :param return_cols: choose 'True' to return generated feature in a list
         :return
             df: 'df' with generated new features
             new_cols: list of generated new features
@@ -35,7 +37,7 @@ class FeatureGeneration:
             new_cols.append(i + '-' + j)
         if drop_origin:
             df.drop(num_cols, axis=1, inplace=True)
-        return df, new_cols if return_cols else df
+        return df, new_cols if return_cols is True else df
 
     # test passed
     @staticmethod
@@ -43,9 +45,11 @@ class FeatureGeneration:
         """
         Generate A*B features for numerical features
         :param df: DataFrame
-        :param num_cols: list of numerical columns to generate new features
-        :param return_cols: choose 'True' to return generated feature list
+        :param num_cols:
+            list of numerical columns to generate new features;
+            automatically choose all numerical features if 'auto'
         :param drop_origin: choose 'True' to drop 'num_cols' in 'df'
+        :param return_cols: choose 'True' to return generated feature in a list
         :return
             df: 'df' with generated new features
             new_cols: list of generated new features
@@ -61,7 +65,7 @@ class FeatureGeneration:
             new_cols.append(i + '*' + j)
         if drop_origin:
             df.drop(num_cols, axis=1, inplace=True)
-        return df, new_cols if return_cols else df
+        return df, new_cols if return_cols is True else df
 
     @staticmethod
     def explicit_pairwise_interactions(df: DataFrame, col1, col2, return_cols=False, drop_origin=False):
@@ -73,7 +77,7 @@ class FeatureGeneration:
         :param df: DataFrame
         :param col1: specify the 1st column
         :param col2: specify the 2nd column
-        :param return_cols: choose 'True' to return generated feature list
+        :param return_cols: choose 'True' to return generated feature in a list
         :param drop_origin: choose 'True' to drop 'num_cols' in 'df'
         :return:
         """
@@ -110,3 +114,17 @@ class FeatureGeneration:
         """
         for col1, col2 in col_pairs:
             FeatureGeneration.explicit_pairwise_interactions(df, col1, col2, return_cols, drop_origin)
+
+    @staticmethod
+    def kmeans_featurization(df1, df2=None, cols='all', one_hot=None):
+        """
+        Feed features and target into KMeans to generate a new feature that indicates the cluster where it belongs to.
+        :param df1: DataFrame, training set
+        :param df2: DataFrame, test set
+        :param one_hot: one-hot encode the new feature if True
+        :param cols: list of encoded columns to be used; 'all' for all columns;
+        :return:
+            df1 with the new feature
+            df2 with the new feature
+        """
+        pass

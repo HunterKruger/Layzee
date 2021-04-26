@@ -28,18 +28,18 @@ class Evaluation:
         pass
 
     @staticmethod
-    def feature_importance(model, features):
+    def feature_importance(model, features, top_n=10):
         """
         Plot feature importance of a tree-based model
         :param features: list of features, the order matters
                 eg: use X_train.columns.tolist()
         :param model: a tree-based model object such as Random Forest, XGBoost
+        :param top_n: plot top n important features
         """
-        pack = sorted(zip(features, model.feature_importances_.tolist()), key=lambda tup: tup[1],
-                      reverse=True)
+        pack = sorted(zip(features, model.feature_importances_.tolist()), key=lambda tup: tup[1], reverse=True)
         data, idx = zip(*pack)
         ss = pd.Series(data=data, index=idx)
-        sns.barplot(y=ss.values, x=ss.index, orient='h')
+        sns.barplot(y=ss.values[:top_n], x=ss.index[:top_n], orient='h')
 
     @staticmethod
     def coefficients_intercept(model, features):
@@ -375,9 +375,7 @@ class MltClsEvaluation(Evaluation):
         :param label: label name, not encoded
         :param bins: number of bins
         """
-        if self.y_proba is None:
-            print('Input predicted probability when initiating this class.')
-        else:
+        if self.y_proba is not None:
             y_score_temp = self.y_proba[:, self.label2num[label]]  # proba of label
             # 1 is label, 0 is not label
             y_true_temp = [1 if num == self.label2num[label] else 0 for num in self.y_true]
@@ -390,14 +388,14 @@ class MltClsEvaluation(Evaluation):
             plt.ylabel('Frequency of Positive Class')
             plt.legend()
             plt.show()
+        else:
+            print('Input predicted probability when initiating this class.')
 
     def roc_curve(self, label):
         """
         :param label: label name, not encoded
         """
-        if self.y_proba is None:
-            print('Input predicted y probability when initiating this class.')
-        else:
+        if self.y_proba is not None:
             ns_probs = [0 for _ in range(len(self.y_true))]
             # calculate scores
             y_score_temp = self.y_proba[:, self.label2num[label]]  # proba of label
@@ -420,6 +418,8 @@ class MltClsEvaluation(Evaluation):
             plt.legend()
             # show the plot
             plt.show()
+        else:
+            print('Input predicted y probability when initiating this class.')
 
     def density_chart(self, label):
         """

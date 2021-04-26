@@ -5,6 +5,9 @@ from sklearn.model_selection import train_test_split
 
 class SplitterSampler:
 
+    def __init__(self):
+        pass
+
     @staticmethod
     def split_df(df, test_ratio=0.2, target=None, random_state=1337):
         """

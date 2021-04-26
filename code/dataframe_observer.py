@@ -7,6 +7,10 @@ pd.options.display.max_rows = 100
 
 
 class DataframeObserver:
+    """
+    A class with only static methods for EDA (exploratory data analysis).
+    Input parameter 'df' will never be modified.
+    """
 
     def __init__(self):
         pass
@@ -95,11 +99,11 @@ class DataframeObserver:
         :param return_result: return stats in a dict if True
         """
 
-        Q1 = df[col_name].quantile(q=0.25)
-        Q3 = df[col_name].quantile(q=0.75)
-        IQR = Q3 - Q1
-        upper_bound = 1.5 * IQR + Q3
-        lower_bound = Q1 - 1.5 * IQR
+        q1 = df[col_name].quantile(q=0.25)
+        q3 = df[col_name].quantile(q=0.75)
+        iqr = q3 - q1
+        upper_bound = 1.5 * iqr + q3
+        lower_bound = q1 - 1.5 * iqr
         outliers = len(df[(df[col_name] < lower_bound) | (df[col_name] > upper_bound)])
 
         result = dict()
@@ -118,9 +122,9 @@ class DataframeObserver:
         result['Skewness'] = df[col_name].skew()
         result['Kurtosis'] = df[col_name].kurtosis()
         result['Outliers'] = outliers
-        result['Q1'] = Q1
-        result['Q3'] = Q3
-        result['IQR'] = IQR
+        result['Q1'] = q1
+        result['Q3'] = q3
+        result['IQR'] = iqr
         result['Down'] = lower_bound
         result['Up'] = upper_bound
 
@@ -168,6 +172,7 @@ class DataframeObserver:
     @staticmethod
     def correlation(df, col_list=None, method='pearson', threshold=None, plot_size_x=7, plot_size_y=6):
         """
+        Plot correlation between columns, pairs with correlations larger than the specified threshold will be returned.
         :param df: a DataFrame
         :param col_list: list of columns to calculate correlations
         :param method: 'pearson', 'spearman', 'kendall'

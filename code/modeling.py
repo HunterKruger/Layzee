@@ -43,33 +43,33 @@ class Modeling:
         self.random_state = random_state
         self.cv = cv
 
-    def model_mapping(self, model, class_weight):
+    def model_mapping(self, model):
         bin_model_mapper = {
-            'svm': SVC(probability=True, class_weight=class_weight, random_state=self.random_state),
-            'rf': RandomForestClassifier(random_state=self.random_state, class_weight=class_weight),
+            'svm': SVC(probability=True, random_state=self.random_state),
+            'rf': RandomForestClassifier(random_state=self.random_state),
             'gb': GradientBoostingClassifier(random_state=self.random_state),
-            'et': ExtraTreesClassifier(random_state=self.random_state, class_weight=class_weight),
-            'dt': DecisionTreeClassifier(random_state=self.random_state, class_weight=class_weight),
-            'lr': LogisticRegression(random_state=self.random_state, class_weight=class_weight),
-            'knn': KNeighborsClassifier(),  # how to set class_weight? No random_state?
-            'sgd': SGDClassifier(random_state=self.random_state, class_weight=class_weight),
+            'et': ExtraTreesClassifier(random_state=self.random_state),
+            'dt': DecisionTreeClassifier(random_state=self.random_state),
+            'lr': LogisticRegression(random_state=self.random_state),
+            'knn': KNeighborsClassifier(),  # No random_state?
+            'sgd': SGDClassifier(random_state=self.random_state),
             'xgb': XGBClassifier(objective='binary:logistic', random_state=self.random_state),
-            'lgb': LGBMClassifier(class_weight=class_weight, random_state=self.random_state),
-            'cat': CatBoostClassifier(random_state=self.random_state, auto_class_weights=class_weight)
+            'lgb': LGBMClassifier(random_state=self.random_state),
+            'cat': CatBoostClassifier(random_state=self.random_state)
         }
 
         mlt_model_mapper = {
-            'svm': SVC(probability=True, class_weight=class_weight, random_state=self.random_state),
-            'rf': RandomForestClassifier(random_state=self.random_state, class_weight=class_weight),
+            'svm': SVC(probability=True, random_state=self.random_state),
+            'rf': RandomForestClassifier(random_state=self.random_state),
             'gb': GradientBoostingClassifier(random_state=self.random_state),
-            'et': ExtraTreesClassifier(random_state=self.random_state, class_weight=class_weight),
-            'dt': DecisionTreeClassifier(random_state=self.random_state, class_weight=class_weight),
-            'lr': LogisticRegression(random_state=self.random_state, class_weight=class_weight),
+            'et': ExtraTreesClassifier(random_state=self.random_state),
+            'dt': DecisionTreeClassifier(random_state=self.random_state),
+            'lr': LogisticRegression(random_state=self.random_state),
             'knn': KNeighborsClassifier(),
-            'sgd': SGDClassifier(random_state=self.random_state, class_weight=class_weight),
+            'sgd': SGDClassifier(random_state=self.random_state),
             'xgb': XGBClassifier(objective='multi:softprob', random_state=self.random_state),
-            'lgb': LGBMClassifier(class_weight=class_weight, random_state=self.random_state),
-            'cat': CatBoostClassifier(random_state=self.random_state, auto_class_weights=class_weight)
+            'lgb': LGBMClassifier(random_state=self.random_state),
+            'cat': CatBoostClassifier(random_state=self.random_state)
         }
 
         reg_model_mapper = {
@@ -94,7 +94,7 @@ class Modeling:
         if self.task == 'mlt':
             return mlt_model_mapper[model]
 
-    def modeling(self, model, hp, strategy='grid', max_iter=10, n_jobs=-1, class_weight=None, calibration=None):
+    def modeling(self, model, hp, strategy='grid', max_iter=10, n_jobs=-1, calibration=None):
         """
         Modeling with a model and its specified hyper-parameters.
         :param model: a model name
@@ -105,11 +105,6 @@ class Modeling:
             'bayesian' for Bayesian Search, currently not supported
         :param max_iter: max iteration for random search
         :param n_jobs: number of hardware sources for hyper-params searching, -1 to use all
-        :param class_weight: only for classification tasks
-            None: all rows will be considered equally.
-            'balanced': The "balanced" mode uses the values of y to automatically adjust
-                        weights inversely proportional to class frequencies in the input data
-                        as ``n_samples / (n_classes * np.bincount(y))``
         :param calibration: calibrate model output to more accurate probability,
                             not available for regression tasks,
                             no need for LogisticRegression or SVC models
@@ -124,7 +119,7 @@ class Modeling:
         """
         start = datetime.datetime.now()
 
-        internal_model = self.model_mapping(model, class_weight)
+        internal_model = self.model_mapping(model)
         optimizer = None
         if strategy == 'grid' and 0 < self.cv < 1:  # grid, hold-out
             optimizer = GridSearchCV(estimator=internal_model,
