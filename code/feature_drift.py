@@ -19,7 +19,8 @@ class FeatureDrift:
         pass
 
     @staticmethod
-    def adversarial_detection(df_train, df_test, target_col=None, auroc_tolerance=0.005, random_state=1234):
+    def adversarial_detection(df_train, df_test, target_col=None, roc_tolerance=0.005, random_state=1234,
+                              return_result=False):
         """
         By training an Adversarial Classifier to determine whether there is feature drift.
         The most important feature will be dropped and the Adversarial Classifier will be retrained at each iteration
@@ -28,15 +29,17 @@ class FeatureDrift:
         :param df_train: training set; remember to drop id features!
         :param df_test: test set; remember to drop id features!
         :param target_col: name of the target column, which will be dropped from df_train and df_test if specified
-        :param auroc_tolerance: tolerance of auroc
+        :param roc_tolerance: tolerance of auroc
             eg: 0.005 -> raise feature drift warning when auroc > 0.505 or < 0.495
         :param random_state: random state seed
+        :param return_result: return df_train & df_test without deleted features if True
+
         """
         df_train_ = df_train.copy()
         df_test_ = df_test.copy()
 
-        print('auroc safe range: [' + str(round((0.5 - auroc_tolerance), 4)) + ', ' +
-              str(round((0.5 + auroc_tolerance), 4)) + ']')
+        print('roc safe range: [' + str(round((0.5 - roc_tolerance), 4)) + ', ' +
+              str(round((0.5 + roc_tolerance), 4)) + ']')
 
         model = RandomForestClassifier(random_state=random_state)
         df_train_['fake_label'] = 0
@@ -76,7 +79,7 @@ class FeatureDrift:
             y_score = best_model.predict_proba(X_test)[:, 1]
             roc = roc_auc_score(y_test, y_score)
 
-            if roc < 0.5 - auroc_tolerance or roc > 0.5 + auroc_tolerance:
+            if roc < 0.5 - roc_tolerance or roc > 0.5 + roc_tolerance:
                 pack = sorted(zip(X_train.columns.tolist(), best_model.feature_importances_.tolist()),
                               key=lambda tup: tup[1], reverse=True)
                 data, idx = zip(*pack)
@@ -87,9 +90,12 @@ class FeatureDrift:
                 features_to_drop.append(first_feature)
             else:
                 print('No feature drift detected  (roc = ' + str(round(roc, 4)) + ')')
-                print('These features have been dropped!')
+                print('The following features have been dropped:')
                 print(features_to_drop)
-                return features_to_drop
+                if return_result:
+                    return df_train_, df_test_, features_to_drop
+                else:
+                    break
 
     @staticmethod
     def categorical_detection(df_train, df_test, col_name, top_n=None, plot_size_x=12, plot_size_y=12,
@@ -113,9 +119,24 @@ class FeatureDrift:
         result1['Missing'] = df_train[col_name].isnull().sum()
         result1['Missing%'] = df_train[col_name].isnull().sum() / df_train.shape[0]
 
-        print('-----------------df_train summary--------------------------')
-        for k, v in result1.items():
-            print(str(k) + ': ' + str(v))
+        result2 = dict()
+        result2['Type'] = str(df_test[col_name].dtype)
+        result2['Rows'] = df_test.shape[0]
+        result2['Distinct'] = df_test[col_name].nunique()
+        result2['Missing'] = df_test[col_name].isnull().sum()
+        result2['Missing%'] = df_test[col_name].isnull().sum() / df_test.shape[0]
+
+        # print('-----------------df_train summary--------------------------')
+        # for k, v in result1.items():
+        #     print(str(k) + ': ' + str(v))
+        # print('-----------------df_test summary--------------------------')
+        # for k, v in result2.items():
+        #     print(str(k) + ': ' + str(v))
+
+        result_df = pd.DataFrame(index=result1.keys())
+        result_df['df_train'] = result1.values()
+        result_df['df_test'] = result2.values()
+        print(result_df)
 
         if top_n is None:
             top_n = len(df_train[col_name].value_counts())
@@ -131,17 +152,6 @@ class FeatureDrift:
         count_table_info1.reset_index(inplace=True)
         count_table_info1.columns = [col_name, 'Count', '%', 'Cum.%']
         print(count_table_info1)
-
-        result2 = dict()
-        result2['Type'] = str(df_test[col_name].dtype)
-        result2['Rows'] = df_test.shape[0]
-        result2['Distinct'] = df_test[col_name].nunique()
-        result2['Missing'] = df_test[col_name].isnull().sum()
-        result2['Missing%'] = df_test[col_name].isnull().sum() / df_test.shape[0]
-
-        print('-----------------df_test summary--------------------------')
-        for k, v in result2.items():
-            print(str(k) + ': ' + str(v))
 
         if top_n is None:
             top_n = len(df_test[col_name].value_counts())
@@ -167,7 +177,7 @@ class FeatureDrift:
         plt.title(col_name + ' in df2')
 
         if return_result:
-            return result1, count_table_info1, result2, count_table_info2
+            return result_df, count_table_info1, count_table_info2
 
     @staticmethod
     def numerical_detection(df_train, df_test, col_name, plot_size_x=10, plot_size_y=5, return_result=False):

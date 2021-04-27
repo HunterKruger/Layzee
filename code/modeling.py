@@ -86,6 +86,7 @@ class Modeling:
             'lgb': LGBMRegressor(random_state=self.random_state),
             'cat': CatBoostRegressor(random_state=self.random_state)
         }
+
         if self.task == 'reg':
             return reg_model_mapper[model]
         if self.task == 'bin':
@@ -111,7 +112,7 @@ class Modeling:
             'sigmoid': platt scaling
             'isotonic': isotonic regression
         :return
-            y_score: prediction of the best model, 1d array-like
+            y_score: prediction of the best model in probability, for positive label, 1d array-like
             y_proba: prediction of the best model in probability, for each label (only for multiclass task)
             best_model: best model object
             best_score: best score in the specified metric
