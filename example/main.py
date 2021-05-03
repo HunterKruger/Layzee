@@ -1,5 +1,5 @@
 import pandas as pd
-from feature_generation import FeatureGeneration as FG
+from layzee.feature_generation import FeatureGeneration as FG
 
 
 def main():
