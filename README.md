@@ -27,3 +27,4 @@ The following notebooks are quick tutorials for supervised learning:
     $ pip3 install .
 ```
 * To uninstall, run `$ pip3 uninstall layzee`
+*
