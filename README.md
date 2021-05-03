@@ -17,3 +17,14 @@ The following notebooks are quick tutorials for supervised learning:
 + test_modeling_bin.ipynb: binary classification
 + test_modeling_mlt.ipynb: multiclass classification
 + test_modeling_reg.ipynb: regression
+
+### Pip Installation Guide
+* Download the package
+* [optional] Create a virtual env and activate it
+* In terminal, run 
+```bash
+    $ cd ./Layzee
+    $ pip3 install .
+```
+* To uninstall, run `$ pip3 uninstall layzee`
+*
