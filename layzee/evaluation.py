@@ -6,6 +6,7 @@ from scipy.stats.stats import pearsonr
 from scipy.stats import shapiro
 from sklearn.calibration import calibration_curve
 from matplotlib import pyplot as plt
+import statsmodels.api as sm
 from sklearn.metrics import log_loss, roc_auc_score, brier_score_loss, precision_score, recall_score, f1_score, \
     accuracy_score, hamming_loss, matthews_corrcoef, confusion_matrix, roc_curve, explained_variance_score, \
     mean_squared_error, mean_absolute_error, mean_absolute_percentage_error, r2_score, classification_report
@@ -127,8 +128,10 @@ class RegEvaluation(Evaluation):
         else:
             print('Error is not normally distributed.')
         print('--------------------------------------')
-        print('Error plot between 2% & 98% quantile.')
+        print('Error plot & QQ plot for 2% ~ 98% quantile')
         sns.displot(data=error_clipped)
+        sm.qqplot(error_clipped, line='45', fit=True)
+        plt.show()
 
         if self.return_result:
             return to_display
@@ -173,10 +176,13 @@ class BinClsEvaluation(Evaluation):
 
         return best_cutoff, decision_table
 
-    def confusion_matrix(self, cutoff=None, cost_tp=1, cost_tn=0, cost_fp=-0.3, cost_fn=0):
+    def confusion_matrix(self, cutoff=None, simple=False, cost_matrix=False, cost_tp=1, cost_tn=0, cost_fp=-0.3,
+                         cost_fn=0):
         """
         Confusion matrix, cost matrix and related metrics.
         :param cutoff: cut-off threshold of y_pred
+        :param simple: display simplified result
+        :param cost_matrix: calculate & display cost matrix
         :param cost_tp: cost of tp
         :param cost_tn: cost of tn
         :param cost_fp: cost of fp
@@ -192,13 +198,14 @@ class BinClsEvaluation(Evaluation):
         to_display['tn'], to_display['fp'], to_display['fn'], to_display['tp'] = \
             confusion_matrix(self.y_true, self.y_score > cutoff).ravel()
 
-        to_display['gain_tn'] = to_display['tn'] * cost_tn
-        to_display['gain_tp'] = to_display['tp'] * cost_tp
-        to_display['gain_fn'] = to_display['fn'] * cost_fn
-        to_display['gain_fp'] = to_display['fp'] * cost_fp
-        to_display['gain_all'] = to_display['gain_tn'] + to_display['gain_tp'] + to_display['gain_fn'] + to_display[
-            'gain_fp']
-        to_display['gain_per_record'] = to_display['gain_all'] / len(self.y_true)
+        if cost_matrix:
+            to_display['gain_tn'] = to_display['tn'] * cost_tn
+            to_display['gain_tp'] = to_display['tp'] * cost_tp
+            to_display['gain_fn'] = to_display['fn'] * cost_fn
+            to_display['gain_fp'] = to_display['fp'] * cost_fp
+            to_display['gain_all'] = to_display['gain_tn'] + to_display['gain_tp'] + to_display['gain_fn'] + to_display[
+                'gain_fp']
+            to_display['gain_per_record'] = to_display['gain_all'] / len(self.y_true)
 
         to_display['acc'] = accuracy_score(self.y_true, self.y_score > cutoff)
         to_display['pcs'] = precision_score(self.y_true, self.y_score > cutoff)
@@ -213,29 +220,33 @@ class BinClsEvaluation(Evaluation):
         record_count = pd.DataFrame(data=cm, columns=cols, index=idx)
         print(record_count)
         print('-----------------------------------')
-        cols = ['Predicted_1', 'Predicted_0']
-        idx = ['Actual_1%', 'Actual_0%']
-        cm2 = confusion_matrix(self.y_true, self.y_score > cutoff, normalize='true')
-        pct_actual = pd.DataFrame(data=np.round(cm2, 2), columns=cols, index=idx)
-        print(pct_actual)
-        print('-----------------------------------')
-        cols = ['Predicted_1%', 'Predicted_0%']
-        idx = ['Actual_1', 'Actual_0']
-        cm3 = confusion_matrix(self.y_true, self.y_score > cutoff, normalize='pred')
-        pct_pred = pd.DataFrame(data=np.round(cm3, 2), columns=cols, index=idx)
-        print(pct_pred)
-        print('-------------Cost Matrix-----------')
-        print('If model predict 1 and value 1, the gain is ' +
-              str(cost_tp) + ' x ' + str(to_display['tp']) + ' = ' + str(to_display['gain_tp']))
-        print('If model predict 1 and value 0, the gain is ' +
-              str(cost_fp) + ' x ' + str(to_display['fp']) + ' = ' + str(to_display['gain_fp']))
-        print('If model predict 0 and value 1, the gain is ' +
-              str(cost_fn) + ' x ' + str(to_display['fn']) + ' = ' + str(to_display['gain_fn']))
-        print('If model predict 0 and value 0, the gain is ' +
-              str(cost_tn) + ' x ' + str(to_display['tn']) + ' = ' + str(to_display['gain_tn']))
-        print('Average gain per record ' + str(np.round(to_display['gain_per_record'], 2)) + ' x ' + str(
-            len(self.y_true)) + ' = ' + str(to_display['gain_all']))
-        print('-----------------------------------')
+
+        if not simple:
+            cols = ['Predicted_1', 'Predicted_0']
+            idx = ['Actual_1%', 'Actual_0%']
+            cm2 = confusion_matrix(self.y_true, self.y_score > cutoff, normalize='true')
+            pct_actual = pd.DataFrame(data=np.round(cm2, 2), columns=cols, index=idx)
+            print(pct_actual)
+            print('-----------------------------------')
+            cols = ['Predicted_1%', 'Predicted_0%']
+            idx = ['Actual_1', 'Actual_0']
+            cm3 = confusion_matrix(self.y_true, self.y_score > cutoff, normalize='pred')
+            pct_pred = pd.DataFrame(data=np.round(cm3, 2), columns=cols, index=idx)
+            print(pct_pred)
+
+        if cost_matrix:
+            print('-------------Cost Matrix-----------')
+            print('If model predict 1 and value 1, the gain is ' +
+                  str(cost_tp) + ' x ' + str(to_display['tp']) + ' = ' + str(to_display['gain_tp']))
+            print('If model predict 1 and value 0, the gain is ' +
+                  str(cost_fp) + ' x ' + str(to_display['fp']) + ' = ' + str(to_display['gain_fp']))
+            print('If model predict 0 and value 1, the gain is ' +
+                  str(cost_fn) + ' x ' + str(to_display['fn']) + ' = ' + str(to_display['gain_fn']))
+            print('If model predict 0 and value 0, the gain is ' +
+                  str(cost_tn) + ' x ' + str(to_display['tn']) + ' = ' + str(to_display['gain_tn']))
+            print('Average gain per record ' + str(np.round(to_display['gain_per_record'], 2)) + ' x ' + str(
+                len(self.y_true)) + ' = ' + str(to_display['gain_all']))
+            print('-----------------------------------')
 
         ss = pd.Series(data=[to_display['acc'], to_display['pcs'], to_display['rec'], to_display['f1']],
                        index=['Accuracy', 'Precision', 'Recall', 'F1_score'])
@@ -331,8 +342,9 @@ class MltClsEvaluation(Evaluation):
         Constructor.
         :param y_score: target prediction, encoded, list or Series of int
         :param y_true: ground truth of target, encoded, list or Series of int
-        :param labels: list of labels, the order matters
-                eg: labels = ['Red,'Green','Yellow'], encoded to [0,1,2] by default
+        :param labels: list of labels, the order matters; or a dict with key as label and value as encoded value.
+                eg: labels = ['Red','Green','Yellow'], encoded to [0,1,2] by default
+                    labels = {'Red':0, 'Green':1, 'Yellow':2}
         :param y_proba:
                 2-d array like, shape = (n_samples, n_classes)
                     eg:    Red | Green | Yellow
@@ -344,35 +356,48 @@ class MltClsEvaluation(Evaluation):
         """
         super().__init__(y_score, y_true, return_result)
 
-        label2num = dict()
-        for idx, lb in enumerate(labels):
-            label2num[lb] = idx
+        if isinstance(labels, dict):
+            self.label2num = labels
+            self.labels = [k for k, v in labels.items()]
+        elif isinstance(labels, list):
+            self.labels = labels
+            self.label2num = dict()
+            for idx, lb in enumerate(labels):
+                self.label2num[lb] = idx
+        else:
+            raise ValueError('Wrong input type for y_proba')
 
-        self.label2num = label2num
-        self.labels = labels
-        self.num2label = {v: k for k, v in label2num.items()}
+        self.num2label = {v: k for k, v in self.label2num.items()}
         self.y_proba = y_proba
 
-    def confusion_matrix(self):
+    def confusion_matrix(self, simple=True):
+        """
+        Confusion matrix.
+        :param simple: display simplified result
+        :return:
+        """
+        print('--------Confusion Matrix-----------')
         cols = ['Predicted_' + str(x) for x in self.num2label.values()]
         idx = ['Actual_' + str(x) for x in self.num2label.values()]
         cm = confusion_matrix(self.y_true, self.y_score)
         record_count = pd.DataFrame(data=cm, columns=cols, index=idx)
         print(record_count)
         print('------------------------------')
-        cols = ['Predicted_' + str(x) for x in self.num2label.values()]
-        idx = ['Actual%_' + str(x) for x in self.num2label.values()]
-        cm2 = confusion_matrix(self.y_true, self.y_score, normalize='true')
-        pct_actual = pd.DataFrame(data=np.round(cm2, 2), columns=cols, index=idx)
-        print(pct_actual)
-        print('------------------------------')
-        cols = ['Predicted%_' + str(x) for x in self.num2label.values()]
-        idx = ['Actual_' + str(x) for x in self.num2label.values()]
-        cm3 = confusion_matrix(self.y_true, self.y_score, normalize='pred')
-        pct_pred = pd.DataFrame(data=np.round(cm3, 2), columns=cols, index=idx)
-        print(pct_pred)
-        print('------------------------------')
-        print(classification_report(self.y_true, self.y_score, target_names=self.labels))
+
+        if not simple:
+            cols = ['Predicted_' + str(x) for x in self.num2label.values()]
+            idx = ['Actual%_' + str(x) for x in self.num2label.values()]
+            cm2 = confusion_matrix(self.y_true, self.y_score, normalize='true')
+            pct_actual = pd.DataFrame(data=np.round(cm2, 2), columns=cols, index=idx)
+            print(pct_actual)
+            print('------------------------------')
+            cols = ['Predicted%_' + str(x) for x in self.num2label.values()]
+            idx = ['Actual_' + str(x) for x in self.num2label.values()]
+            cm3 = confusion_matrix(self.y_true, self.y_score, normalize='pred')
+            pct_pred = pd.DataFrame(data=np.round(cm3, 2), columns=cols, index=idx)
+            print(pct_pred)
+            print('------------------------------')
+            print(classification_report(self.y_true, self.y_score, target_names=self.labels))
 
     def calibration_curve(self, label, bins=10):
         """
@@ -399,7 +424,9 @@ class MltClsEvaluation(Evaluation):
         """
         :param label: label name, not encoded
         """
-        if self.y_proba is not None:
+        if self.y_proba is None:
+            print('Input predicted y probability when initiating this class.')
+        else:
             ns_probs = [0 for _ in range(len(self.y_true))]
             # calculate scores
             y_score_temp = self.y_proba[:, self.label2num[label]]  # proba of label
@@ -422,8 +449,6 @@ class MltClsEvaluation(Evaluation):
             plt.legend()
             # show the plot
             plt.show()
-        else:
-            print('Input predicted y probability when initiating this class.')
 
     def density_chart(self, label):
         """

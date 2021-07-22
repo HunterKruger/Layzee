@@ -1,12 +1,11 @@
 from abc import abstractmethod
-
+import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LassoCV, LogisticRegressionCV
 from sklearn.decomposition import PCA
-from sklearn.feature_selection import SelectKBest
-from sklearn.feature_selection import mutual_info_classif, mutual_info_regression, chi2, f_classif, f_regression
-import pandas as pd
+from sklearn.feature_selection import mutual_info_classif, mutual_info_regression, chi2, \
+    f_classif, f_regression, SelectKBest, VarianceThreshold
 
 
 class FeatureReduction:
@@ -20,7 +19,7 @@ class FeatureReduction:
         """
         Constructor
         :param X: DataFrame, with all features encoded
-        :param y: Series, the target, encoded
+        :param y: Series, the target, encoded, optional
         """
         self.X = X
         self.y = y
@@ -53,8 +52,36 @@ class FeatureReduction:
     def f(self, n_keep):
         pass
 
-    def variance_based(self, threshold):
-        pass
+    def variance_based(self, threshold, num_cols='auto'):
+        """
+        Filter numerical features based on a specific threshold of variance
+        :param threshold: threshold of std
+        :param num_cols: list of str, numerical features
+                         choose 'auto' for auto detection
+        :return: reduced X
+        """
+        if num_cols == 'auto':
+            num_cols = self.X.select_dtypes('number').columns.tolist()
+        rest_cols = list(set(self.X.columns.tolist()) - set(num_cols))
+        selector = VarianceThreshold(threshold=threshold)
+        X_selected = selector.fit_transform(self.X)
+        return pd.concat([X_selected, self.X[rest_cols]], axis=1)
+
+    def mode_based(self, threshold, cat_cols='auto'):
+        """
+        Filter categorical features based on a specific threshold of mode proportion
+        :param threshold: threshold of mode proportion, 0-1.00 in decimal
+        :param cat_cols: list of str, categorical features
+                         choose 'auto' for auto detection
+        :return: X reduced
+        """
+        if cat_cols == 'auto':
+            cat_cols = self.X.select_dtypes('object').columns.tolist()
+        X_temp = self.X.copy()
+        for col in cat_cols:
+            if self[col].value_counts(normalize=True).nlargest().values[0] > threshold:
+                X_temp.drop(col, axis=1, inplace=True)
+        return X_temp
 
     # test passed
     def pca(self, n):
@@ -68,7 +95,7 @@ class FeatureReduction:
             if decimal >0 and <1, select the number of components such that the amount of variance that needs to be
                 explained is greater than the percentage specified by n_components
         :return
-            reduced DataFrame
+            reduced X
         """
         result = PCA(n_components=n).fit_transform(self.X)
         nb_cols = result.shape[1]
@@ -90,13 +117,13 @@ class RegressionFeatureReduction(FeatureReduction):
     def tree_based(self, n_keep, n_trees, depth):
         """
         This creates a Random Forest model to predict the target.
-        Only the top features according to the feature importances computed by the algorithm will be selected.
+        Only the top features according to the feature importance computed by the algorithm will be selected.
         :param n_keep: number of features to keep
         :param n_trees: number of trees in Random Forest
         :param depth: tree depth in Random Forest
         :return
-                list of top features,
                 X with only top features
+                list of top features
         """
         model = RandomForestRegressor(n_estimators=n_trees, max_depth=depth, n_jobs=-1)
         model.fit(self.X, self.y)
@@ -116,7 +143,6 @@ class RegressionFeatureReduction(FeatureReduction):
                 list of selected features,
                 X with only selected features
         """
-
         if l1 is None:
             l1 = [0.10, 0.1, 1, 10, 100]
         model = LassoCV(cv=3, alphas=l1).fit(self.X, self.y)
@@ -124,24 +150,24 @@ class RegressionFeatureReduction(FeatureReduction):
         result_features = result_series[result_series != 0].index.tolist()
         return result_features, self.X[result_features]
 
-    def pearson_corr(self, n, cols, return_all=False):
+    def pearson_corr(self, n_keep, num_cols='auto'):
         """
-        :param n: number of numerical columns to be kept
-        :param cols: list of columns in X to be calculated with y
-        :param return_all: return selected num_cols and non-num_cols together
+        :param n_keep: number of numerical columns to be kept
+        :param num_cols: list of numerical features in X to be calculated with y
         :return:
+            list of selected features
+            X with selected num_cols and non-num_cols together
         """
-        if n >= len(cols):
+        if num_cols == 'auto':
+            num_cols = self.X.select_dtypes('object').columns.tolist()
+        if n_keep >= len(num_cols):
             raise ValueError("n must smaller than number of numerical cols!")
         else:
-            temp_X = self.X[cols]
-
-        cols_rest = list(set(self.X.columns.tolist()) - set(cols))
-
-        all_data = pd.concat([temp_X, self.y], axis=1)
-        result = all_data.corr('pearson').iloc[:-1, -1].sort_values(ascending=False).index.tolist()[:n]
-
-        return result, self.X[result + cols_rest] if return_all else result, self.X[result]
+            X_temp = self.X[num_cols]
+        rest_cols = list(set(self.X.columns.tolist()) - set(num_cols))
+        all_data = pd.concat([X_temp, self.y], axis=1)
+        selected_cols = all_data.corr('pearson').iloc[:-1, -1].sort_values(ascending=False).index.tolist()[:n_keep]
+        return selected_cols, self.X[selected_cols + rest_cols]
 
     def mutual_info(self, n_keep):
         pass

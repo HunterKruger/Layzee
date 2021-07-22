@@ -311,7 +311,7 @@ class FeatureHandling:
         if self.drop_origin:
             self.drop(col)
 
-    def general_encoder(self, num_cols=None, ordinal_cols=None, one_hot_cols=None, drop=None):
+    def general_encoder(self, num_cols='auto', ordinal_cols=None, one_hot_cols='auto', drop=None):
         """
         A general encoder to transform numerical, categorical and ordinal features.
         :param drop:
@@ -321,8 +321,10 @@ class FeatureHandling:
                 - 'if_binary' : drop the first category in each feature with two
                                 categories. Features with 1 or more than 2 categories are
                                 left intact.
-        :param num_cols: list of numerical columns to be encoded
-        :param one_hot_cols: list of categorical columns to be one-hot encoded
+        :param num_cols: list of numerical columns to be encoded;
+                         select all numerical columns if 'auto'
+        :param one_hot_cols: list of categorical columns to be one-hot encoded;
+                             select all categorical columns if 'auto'
         :param ordinal_cols: list of ordinal columns to be ordinal encoded
         :return
             encoded df
@@ -338,6 +340,8 @@ class FeatureHandling:
         if one_hot_cols is None:
             one_hot_cols = []
             df1_cat = pd.DataFrame()
+        elif one_hot_cols == 'auto':
+            one_hot_cols = self.df.select_dtypes(include='object').columns.tolist()
         else:
             cls_cat1 = ohe.fit_transform(self.df[one_hot_cols]).toarray()
             df1_cat = pd.DataFrame(data=cls_cat1, columns=ohe.get_feature_names(one_hot_cols).tolist())
@@ -345,6 +349,8 @@ class FeatureHandling:
         if num_cols is None:
             num_cols = []
             df1_num = pd.DataFrame()
+        elif num_cols == 'auto':
+            num_cols = self.df.select_dtypes(include='number').columns.tolist()
         else:
             cls_num1 = ss.fit_transform(self.df[num_cols])
             df1_num = pd.DataFrame(cls_num1, columns=num_cols)
@@ -671,7 +677,8 @@ class FeatureHandling2(FeatureHandling):
         if self.drop_origin:
             self.drop(col)
 
-    def general_encoder(self, num_cols=None, ordinal_cols=None, one_hot_cols=None, return_encoders=False, drop=None):
+    def general_encoder(self, num_cols='auto', ordinal_cols=None, one_hot_cols='auto', return_encoders=False,
+                        drop=None):
         """
         A general encoder to transform numerical, categorical and ordinal features.
         :param drop: for one-hot encoding
@@ -681,8 +688,10 @@ class FeatureHandling2(FeatureHandling):
                 - 'if_binary' : drop the first category in each feature with two
                                 categories. Features with 1 or more than 2 categories are
                                 left intact.
-        :param num_cols: list of numerical columns to be encoded
-        :param one_hot_cols: list of categorical columns to be one-hot encoded
+        :param num_cols: list of numerical columns to be encoded;
+                         select all numerical columns if 'auto'
+        :param one_hot_cols: list of categorical columns to be one-hot encoded;
+                             select all categorical columns if 'auto'
         :param ordinal_cols: list of ordinal columns to be ordinal encoded
         :param return_encoders: return these 3 encoders if True
         :return
@@ -701,15 +710,20 @@ class FeatureHandling2(FeatureHandling):
             one_hot_cols = []
             df1_cat = pd.DataFrame()
             df2_cat = pd.DataFrame()
+        elif one_hot_cols == 'auto':
+            one_hot_cols = self.df.select_dtypes(include='object').columns.tolist()
         else:
             cls_cat1 = ohe.fit_transform(self.df[one_hot_cols]).toarray()
             df1_cat = pd.DataFrame(data=cls_cat1, columns=ohe.get_feature_names(one_hot_cols).tolist())
             cls_cat2 = ohe.transform(self.df2[one_hot_cols]).toarray()
             df2_cat = pd.DataFrame(data=cls_cat2, columns=ohe.get_feature_names(one_hot_cols).tolist())
+
         if num_cols is None:
             num_cols = []
             df1_num = pd.DataFrame()
             df2_num = pd.DataFrame()
+        elif num_cols == 'auto':
+            num_cols = self.df.select_dtypes(include='number').columns.tolist()
         else:
             cls_num1 = ss.fit_transform(self.df[num_cols])
             df1_num = pd.DataFrame(cls_num1, columns=num_cols)

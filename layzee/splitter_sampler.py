@@ -1,5 +1,3 @@
-import pandas as pd
-import numpy as np
 from sklearn.model_selection import train_test_split
 
 
@@ -12,10 +10,9 @@ class SplitterSampler:
     def split_df(df, test_ratio=0.2, target=None, random_state=1337):
         """
         Split a dataset into training set and test set
-        df -> (train, test)
-           -> (X_train, X_test, y_train, y_test)
+        df -> (train, test) or (X_train, X_test, y_train, y_test)
         :param df: a DataFrame to be split
-        :param test_ratio: ratio of test set, 0-1
+        :param test_ratio: ratio of test set, 0-1.00 in decimal
         :param target:
             split into (train, test) if not specified
             split into (X_train, X_test, y_train, y_test) if specified

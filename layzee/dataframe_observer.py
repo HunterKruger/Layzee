@@ -141,7 +141,7 @@ class DataframeObserver:
 
     # test passed
     @staticmethod
-    def missing_pattern(df, top_n=5, plot=True, only_missing_col=False):
+    def missing_pattern(df, top_n=5, plot=True, only_missing_col=True):
         """
         Check the missing patterns of a DataFrame
         :param df: a DataFrame
@@ -161,7 +161,6 @@ class DataframeObserver:
         else:
             df_miss = df.applymap(lambda x: '1' if pd.isna(x) else '0')
         row_miss = df_miss.apply(lambda x: '-'.join(x.values), axis=1)
-        print('-------------------------------------------------')
         if only_missing_col:
             print(df.columns[df.isnull().any()].tolist())
         else:

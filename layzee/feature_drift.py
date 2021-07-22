@@ -10,6 +10,7 @@ pd.options.display.max_columns = 100
 pd.options.display.max_rows = 100
 
 
+# test passed
 class FeatureDrift:
     """
     Visualize and detect feature drift.

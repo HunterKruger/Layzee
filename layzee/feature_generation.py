@@ -1,6 +1,7 @@
 import pandas as pd
 from pandas import DataFrame
 from itertools import combinations
+from sklearn.cluster import KMeans
 from sklearn.preprocessing import PolynomialFeatures
 
 
@@ -122,12 +123,16 @@ class FeatureGeneration:
     def kmeans_featurization(df1, df2=None, cols='all', one_hot=None):
         """
         Feed features and target into KMeans to generate a new feature that indicates the cluster where it belongs to.
-        :param df1: DataFrame, training set
-        :param df2: DataFrame, test set
-        :param one_hot: one-hot encode the new feature if True
+        :param df1: DataFrame, training set, including features and the target
+        :param df2: DataFrame, test set, including features and the target
+        :param one_hot: one-hot encode the new kmeans feature if True
         :param cols: list of encoded columns to be used; 'all' for all columns;
         :return:
             df1 with the new feature
             df2 with the new feature
         """
+        if cols != 'all':
+            df1 = df1[cols]
+            df2 = df2[cols]
+
         pass
