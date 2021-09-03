@@ -30,6 +30,7 @@ class FeatureGeneration:
         """
         if num_cols == 'auto':
             num_cols = df.select_dtypes(include='number').columns.tolist()
+
         new_cols = []
         # find all pairs
         pairs = [(a, b) for idx, a in enumerate(num_cols) for b in num_cols[idx + 1:]]

@@ -151,11 +151,10 @@ class DataframeObserver:
         """
         if plot:
             if only_missing_col:
-                sns.heatmap(df[df.columns[df.isnull().any()].tolist()].isnull(),
-                            yticklabels=False, cmap='hot_r', cbar=False)
+                sns.heatmap(df[df.columns[df.isnull().any()].tolist()].isnull(), yticklabels=False, cmap='hot_r',
+                            cbar=False)
             else:
-                sns.heatmap(df[df.columns.tolist()].isnull(),
-                            yticklabels=False, cmap='hot_r', cbar=False)
+                sns.heatmap(df[df.columns.tolist()].isnull(), yticklabels=False, cmap='hot_r', cbar=False)
         if only_missing_col:
             df_miss = df[df.columns[df.isnull().any()]].applymap(lambda x: '1' if pd.isna(x) else '0')
         else:

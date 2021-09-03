@@ -47,7 +47,7 @@ class Evaluation:
         sns.barplot(y=ss.values[:top_n], x=ss.index[:top_n], orient='h')
 
     @staticmethod
-    def coefficients_intercept(model, features):
+    def coefficients_intercept(model, features, top_n=10):
         """
         Plot coefficients and intercept of a (quasi) linear model
         :param features: list of features, the order matters
@@ -59,7 +59,7 @@ class Evaluation:
                       key=lambda tup: tup[2], reverse=True)
         idx, data, data_abs = zip(*pack)
         ss = pd.Series(data=data, index=idx)
-        sns.barplot(x=ss.values, y=ss.index)
+        sns.barplot(x=ss.values[:top_n], y=ss.index[:top_n])
 
 
 class RegEvaluation(Evaluation):
@@ -198,15 +198,6 @@ class BinClsEvaluation(Evaluation):
         to_display['tn'], to_display['fp'], to_display['fn'], to_display['tp'] = \
             confusion_matrix(self.y_true, self.y_score > cutoff).ravel()
 
-        if cost_matrix:
-            to_display['gain_tn'] = to_display['tn'] * cost_tn
-            to_display['gain_tp'] = to_display['tp'] * cost_tp
-            to_display['gain_fn'] = to_display['fn'] * cost_fn
-            to_display['gain_fp'] = to_display['fp'] * cost_fp
-            to_display['gain_all'] = to_display['gain_tn'] + to_display['gain_tp'] + to_display['gain_fn'] + to_display[
-                'gain_fp']
-            to_display['gain_per_record'] = to_display['gain_all'] / len(self.y_true)
-
         to_display['acc'] = accuracy_score(self.y_true, self.y_score > cutoff)
         to_display['pcs'] = precision_score(self.y_true, self.y_score > cutoff)
         to_display['rec'] = recall_score(self.y_true, self.y_score > cutoff)
@@ -235,6 +226,14 @@ class BinClsEvaluation(Evaluation):
             print(pct_pred)
 
         if cost_matrix:
+            to_display['gain_tn'] = to_display['tn'] * cost_tn
+            to_display['gain_tp'] = to_display['tp'] * cost_tp
+            to_display['gain_fn'] = to_display['fn'] * cost_fn
+            to_display['gain_fp'] = to_display['fp'] * cost_fp
+            to_display['gain_all'] = to_display['gain_tn'] + to_display['gain_tp'] + to_display['gain_fn'] + to_display[
+                'gain_fp']
+            to_display['gain_per_record'] = to_display['gain_all'] / len(self.y_true)
+
             print('-------------Cost Matrix-----------')
             print('If model predict 1 and value 1, the gain is ' +
                   str(cost_tp) + ' x ' + str(to_display['tp']) + ' = ' + str(to_display['gain_tp']))
@@ -259,7 +258,6 @@ class BinClsEvaluation(Evaluation):
     def decision_chart(self):
         """
         Plot accuracy, recall, precision, f1_score for each cutoff.
-        :return:
         """
         sns.lineplot(data=self.decision_table)
 

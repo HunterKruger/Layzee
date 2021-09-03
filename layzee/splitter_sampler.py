@@ -1,3 +1,4 @@
+import pandas as pd
 from sklearn.model_selection import train_test_split
 
 
@@ -46,5 +47,31 @@ class SplitterSampler:
         :param train: training set with features and target
         :param test: test set with features and target
         """
-        return train.drop(target, axis=1).copy(), test.drop(target, axis=1).copy(), \
-               train[target].copy(), test[target].copy()
+        return train.drop(target, axis=1).copy(), \
+               test.drop(target, axis=1).copy(), \
+               train[target].copy(), \
+               test[target].copy()
+
+    @staticmethod
+    def sampler(df, records, groupby=None, random_state=1337):
+        """
+        sample a DataFrame with a given count
+        :param df: a DataFrame
+        :param records: number of rows to be sampled if >= 1
+                        proportion of rows to be sampled if > 0 and < 1
+        :param groupby: sampling proportionally based on a categorical column's distribution
+        :param random_state: random state
+        :return:
+        """
+        if groupby is None:
+            if records >= 1:
+                return df.sample(n=records, random_state=random_state)
+            if 0 < records < 1:
+                return df.sample(frac=records, random_state=random_state)
+        else:
+            grouped = df.groupby(groupby)
+            if records >= 1:
+                grouped.apply(lambda x: x.sample(n=records, random_state=random_state))
+            if 0 < records < 1:
+                grouped.apply(lambda x: x.sample(frac=records, random_state=random_state))
+            return grouped.reset_index(level=0, drop=True).sort_index(ascending=True)

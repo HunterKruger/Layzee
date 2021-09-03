@@ -374,15 +374,15 @@ class FeatureHandling:
 class FeatureHandling2(FeatureHandling):
     """
     Several feature handling methods.
-    1st dataframe (usually training set) will be fit then transformed.
-    2st dataframe (usually test set) will be transformed based on the 1st dataframe.
+    1st dataframe (usually the training set) will be fit then transformed.
+    2nd dataframe (usually the test set) will be transformed based on the 1st dataframe.
     """
 
     def __init__(self, df, df2, drop_origin=True):
         """
         :param df: a dataframe to be fit then transformed, usually the training set
-        :param df: a dataframe to be transformed, usually the test set
-        :param drop_origin: drop origin feature if new ones are created
+        :param df2: a dataframe to be transformed, usually the test set
+        :param drop_origin: drop origin features if new ones are created
         """
         super().__init__(df, drop_origin)
         self.df2 = df2.copy()
@@ -392,7 +392,7 @@ class FeatureHandling2(FeatureHandling):
         Impute missing values in a column
         :param col: column name
         :param method: choose the method of imputing, a customized value is allowed
-        :param groupby -> str or list of str:
+        :param groupby:  str or list of str
                 group by one or several categorical columns to calculate the values for imputing
         """
 

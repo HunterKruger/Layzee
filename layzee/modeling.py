@@ -1,5 +1,4 @@
-import datetime
-
+import time
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, ShuffleSplit
 from sklearn.svm import SVC, SVR
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
@@ -16,7 +15,7 @@ from sklearn.calibration import CalibratedClassifierCV
 
 class Modeling:
 
-    def __init__(self, X_train, X_test, y_train, y_test, task, metric, parallelism=-1, cv=3, random_state=1337):
+    def __init__(self, X_train, X_test, y_train, y_test, task, parallelism_training=-1, random_state=1337):
         """
         Initialize data and hyper-parameter settings.
         :param X_train: training set features, DataFrame
@@ -27,11 +26,7 @@ class Modeling:
             'bin' for binary classification
             'mlt' for multi-class classification
             'reg' for regression
-        :param parallelism: number of cores used for parallel training, -1 to use all
-        :param metric: optimize model hyper-parameters for this metric during validation process
-            see https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter
-        :param cv: if > 0 and < 1, simple train/validation split, indicate validation set ratio,
-                   if > 1 and int, cross validation, indicate folds
+        :param parallelism_training: number of cores used for parallel training, -1 to use all
         :param random_state: random state seed
         """
         self.X_train = X_train.copy()
@@ -39,10 +34,8 @@ class Modeling:
         self.X_test = X_test.copy()
         self.y_test = y_test.copy()
         self.task = task
-        self.metric = metric
-        self.parallelism = parallelism
+        self.parallelism_training = parallelism_training
         self.random_state = random_state
-        self.cv = cv
 
     def hyperparam_mapping(self, model):
 
@@ -108,7 +101,7 @@ class Modeling:
                     'tol': [0.001],  # Tolerance for stopping criterion
                     'epsilon': [0.1, 1],  # Epsilon in the epsilon-insensitive loss functions
                     'alpha': [0.1, 1, 10],  # Regularization parameter.
-                    'penalty': ['l2', 'l1', 'elasticnet']  # The penalty (aka regularization term) to be used.
+                    'penalty': ['l2', 'l1']  # The penalty (aka regularization term) to be used.
                     },
             'lgb': {
                 'learning_rate': [0.1, 0.3, 1],  # Boosting learning rate
@@ -154,7 +147,8 @@ class Modeling:
                 'p': [1, 2]  # Power parameter for the Minkowski metric.
             },
             'lr': {
-                'penalty': ['l1', 'l2', 'elasticnet'],  # Used to specify the norm used in the penalization.
+                'solver': ['saga'],
+                'penalty': ['l1', 'l2'],  # Used to specify the norm used in the penalization.
                 'C': [0.1, 0.01, 1, 10, 100],  # Inverse of regularization strength
                 'class_weight': ['balanced']
             },
@@ -241,7 +235,8 @@ class Modeling:
                 'p': [1, 2]  # Power parameter for the Minkowski metric.
             },
             'lr': {
-                'penalty': ['l1', 'l2', 'elasticnet'],  # Used to specify the norm used in the penalization.
+                'solver': ['saga'],
+                'penalty': ['l1', 'l2'],  # Used to specify the norm used in the penalization.
                 'C': [0.1, 0.01, 1, 10, 100],  # Inverse of regularization strength
                 'class_weight': ['balanced']
             },
@@ -315,48 +310,54 @@ class Modeling:
     def model_mapping(self, model):
         bin_model_mapper = {
             'svm': SVC(probability=True, random_state=self.random_state),
-            'rf': RandomForestClassifier(random_state=self.random_state, n_jobs=self.parallelism),
+            'rf': RandomForestClassifier(random_state=self.random_state, n_jobs=self.parallelism_training),
             'gb': GradientBoostingClassifier(random_state=self.random_state),
-            'et': ExtraTreesClassifier(random_state=self.random_state, n_jobs=self.parallelism),
+            'et': ExtraTreesClassifier(random_state=self.random_state, n_jobs=self.parallelism_training),
             'dt': DecisionTreeClassifier(random_state=self.random_state),
             'lr': LogisticRegression(random_state=self.random_state),
             'knn': KNeighborsClassifier(),
             'sgd': SGDClassifier(random_state=self.random_state),
-            'xgb': XGBClassifier(objective='binary:logistic', random_state=self.random_state, n_jobs=self.parallelism),
-            'lgb': LGBMClassifier(objective='binary', random_state=self.random_state, n_jobs=self.parallelism),
+            'xgb': XGBClassifier(objective='binary:logistic', random_state=self.random_state,
+                                 n_jobs=self.parallelism_training),
+            'lgb': LGBMClassifier(objective='binary', random_state=self.random_state, n_jobs=self.parallelism_training),
             'cat': CatBoostClassifier(objective='Logloss', random_state=self.random_state,
-                                      thread_count=self.parallelism)
+                                      thread_count=self.parallelism_training)
         }
 
         mlt_model_mapper = {
             'svm': SVC(probability=True, random_state=self.random_state),
-            'rf': RandomForestClassifier(random_state=self.random_state, n_jobs=self.parallelism),
+            'rf': RandomForestClassifier(random_state=self.random_state, n_jobs=self.parallelism_training),
             'gb': GradientBoostingClassifier(random_state=self.random_state),
-            'et': ExtraTreesClassifier(random_state=self.random_state, n_jobs=self.parallelism),
+            'et': ExtraTreesClassifier(random_state=self.random_state, n_jobs=self.parallelism_training),
             'dt': DecisionTreeClassifier(random_state=self.random_state),
             'lr': LogisticRegression(random_state=self.random_state),
             'knn': KNeighborsClassifier(),
             'sgd': SGDClassifier(random_state=self.random_state),
-            'xgb': XGBClassifier(objective='multi:softprob', random_state=self.random_state, n_jobs=self.parallelism),
-            'lgb': LGBMClassifier(objective='multiclass', random_state=self.random_state, n_jobs=self.parallelism),
+            'xgb': XGBClassifier(objective='multi:softprob', random_state=self.random_state,
+                                 n_jobs=self.parallelism_training),
+            'lgb': LGBMClassifier(objective='multiclass', random_state=self.random_state,
+                                  n_jobs=self.parallelism_training),
             'cat': CatBoostClassifier(objective='MultiClass', random_state=self.random_state,
-                                      thread_count=self.parallelism)
+                                      thread_count=self.parallelism_training)
         }
 
         reg_model_mapper = {
             'svm': SVR(),
-            'rf': RandomForestRegressor(random_state=self.random_state, n_jobs=self.parallelism),
+            'rf': RandomForestRegressor(random_state=self.random_state, n_jobs=self.parallelism_training),
             'gb': GradientBoostingRegressor(random_state=self.random_state),
-            'et': ExtraTreesRegressor(random_state=self.random_state, n_jobs=self.parallelism),
+            'et': ExtraTreesRegressor(random_state=self.random_state, n_jobs=self.parallelism_training),
             'dt': DecisionTreeRegressor(random_state=self.random_state),
             'knn': KNeighborsRegressor(),
             'sgd': SGDRegressor(random_state=self.random_state),
-            'xgb': XGBRegressor(objective='reg:squarederror', random_state=self.random_state, n_jobs=self.parallelism),
+            'xgb': XGBRegressor(objective='reg:squarederror', random_state=self.random_state,
+                                n_jobs=self.parallelism_training),
             'lasso': Lasso(random_state=self.random_state),
             'ridge': Ridge(random_state=self.random_state),
             'lr': LinearRegression(),
-            'lgb': LGBMRegressor(objective='regression', random_state=self.random_state, n_jobs=self.parallelism),
-            'cat': CatBoostRegressor(objective='RMSE', random_state=self.random_state, thread_count=self.parallelism)
+            'lgb': LGBMRegressor(objective='regression', random_state=self.random_state,
+                                 n_jobs=self.parallelism_training),
+            'cat': CatBoostRegressor(objective='RMSE', random_state=self.random_state,
+                                     thread_count=self.parallelism_training)
         }
 
         if self.task == 'reg':
@@ -366,22 +367,27 @@ class Modeling:
         if self.task == 'mlt':
             return mlt_model_mapper[model]
 
-    def modeling(self, model, hp='auto', strategy='grid', max_iter=10, n_jobs=-1, calibration=None):
+    def modeling(self, model, metric, cv=3, hp='auto', strategy='grid', max_iter=10, parallelism_cv=-1,
+                 calibration=None):
         """
         Modeling with a model and its specified hyper-parameters.
         :param model: a model name in short, check 'model_mapping' function
+        :param metric: optimize model hyper-parameters for this metric during validation process
+                    see https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter
         :param hp: a dictionary, key: hyper-parameter, value: list or range of hyper-parameter
                    use pre-set hyper-parameter space if 'auto'
+        :param cv: if > 0 and < 1 in float, simple train/validation split, indicate validation set ratio,
+                   if > 1 and in int, cross validation, indicate folds
         :param strategy:
              None for fitting directly
             'grid' for Grid search
             'random' for Random search
             'bayesian' for Bayesian Search, currently not supported
         :param max_iter: max iteration for random search
-        :param n_jobs: number of hardware sources for hyper-params searching, -1 to use all
+        :param parallelism_cv: number of hardware sources for hyper-params searching and cross validation, -1 to use all
         :param calibration: calibrate model output to more accurate probability,
                             not available for regression tasks,
-                            no need for LogisticRegression or SVC models
+                            no need for LogisticRegression or SVC
             None: no calibration
             'sigmoid': platt scaling
             'isotonic': isotonic regression
@@ -390,50 +396,51 @@ class Modeling:
             y_proba: prediction of the best model in probability, for each label (only for multiclass task)
             best_model: best model object
             best_score: best score in the specified metric
+            best_params: best models' hyper-params
         """
-        start = datetime.datetime.now()
+        start = time.time()
 
         if hp == 'auto':
             hp = self.hyperparam_mapping(model)
         internal_model = self.model_mapping(model)
         optimizer = None
 
-        if strategy == 'grid' and 0 < self.cv < 1:  # grid, hold-out
+        if strategy == 'grid' and 0 < cv < 1:  # grid, hold-out
             optimizer = GridSearchCV(estimator=internal_model,
                                      param_grid=hp,
-                                     n_jobs=n_jobs,
-                                     scoring=self.metric,
+                                     n_jobs=parallelism_cv,
+                                     scoring=metric,
                                      refit=True,
-                                     cv=ShuffleSplit(test_size=self.cv,
+                                     cv=ShuffleSplit(test_size=cv,
                                                      n_splits=1,
                                                      random_state=self.random_state)
                                      )
-        if strategy == 'grid' and self.cv >= 1:  # grid, cv
+        if strategy == 'grid' and cv >= 1:  # grid, cv
             optimizer = GridSearchCV(estimator=internal_model,
                                      param_grid=hp,
-                                     n_jobs=n_jobs,
-                                     cv=self.cv,
-                                     scoring=self.metric,
+                                     n_jobs=parallelism_cv,
+                                     cv=cv,
+                                     scoring=metric,
                                      refit=True
                                      )
-        if strategy == 'random' and 0 < self.cv < 1:  # random, hold-out
+        if strategy == 'random' and 0 < cv < 1:  # random, hold-out
             optimizer = RandomizedSearchCV(estimator=internal_model,
                                            param_distributions=hp,
                                            n_iter=max_iter,
-                                           n_jobs=n_jobs,
+                                           n_jobs=parallelism_cv,
                                            refit=True,
-                                           scoring=self.metric,
-                                           cv=ShuffleSplit(test_size=self.cv,
+                                           scoring=metric,
+                                           cv=ShuffleSplit(test_size=cv,
                                                            n_splits=1,
                                                            random_state=self.random_state)
                                            )
-        if strategy == 'random' and self.cv >= 1:  # random, cv
+        if strategy == 'random' and cv >= 1:  # random, cv
             optimizer = RandomizedSearchCV(estimator=internal_model,
                                            param_distributions=hp,
                                            n_iter=max_iter,
-                                           n_jobs=n_jobs,
-                                           cv=self.cv,
-                                           scoring=self.metric,
+                                           n_jobs=parallelism_cv,
+                                           cv=cv,
+                                           scoring=metric,
                                            refit=True
                                            )
 
@@ -451,8 +458,8 @@ class Modeling:
             calib_clf = CalibratedClassifierCV(base_estimator=best_model, method='isotonic', cv='prefit')
             calib_clf.fit(self.X_test, self.y_test)
 
-        end = datetime.datetime.now()
-        print(end - start)
+        end = time.time()
+        print('Time consumption: ' + str(round(end - start, 2)) + 's.')
 
         if self.task == 'reg':
             if calibration is None:
@@ -460,12 +467,14 @@ class Modeling:
             else:
                 y_score = calib_clf.predict(self.X_test)
             return y_score, best_model, best_score, best_params
+
         if self.task == 'bin':
             if calibration is None:
                 y_score = best_model.predict_proba(self.X_test)
             else:
                 y_score = calib_clf.predict_proba(self.X_test)
             return y_score[:, 1], best_model, best_score, best_params
+
         if self.task == 'mlt':
             y_score = best_model.predict(self.X_test)
             if calibration is None:

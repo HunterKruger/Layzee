@@ -25,7 +25,7 @@ class FeatureDrift:
         """
         By training an Adversarial Classifier to determine whether there is feature drift.
         The most important feature will be dropped and the Adversarial Classifier will be retrained at each iteration
-        until auc_roc reduces into the specified tolerance range.
+        until auc_roc reduces into a specified tolerance range.
         Reference: https://zhuanlan.zhihu.com/p/349432455
         :param df_train: training set; remember to drop id features!
         :param df_test: test set; remember to drop id features!
