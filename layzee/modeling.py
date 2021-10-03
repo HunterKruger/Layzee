@@ -450,13 +450,13 @@ class Modeling:
         best_params = optimizer.best_params_
 
         # calibration:
-        calib_clf = None
+        calibrated_classifier = None
         if calibration == 'sigmoid':
-            calib_clf = CalibratedClassifierCV(base_estimator=best_model, method='sigmoid', cv='prefit')
-            calib_clf.fit(self.X_test, self.y_test)
+            calibrated_classifier = CalibratedClassifierCV(base_estimator=best_model, method='sigmoid', cv='prefit')
+            calibrated_classifier.fit(self.X_test, self.y_test)
         if calibration == 'isotonic':
-            calib_clf = CalibratedClassifierCV(base_estimator=best_model, method='isotonic', cv='prefit')
-            calib_clf.fit(self.X_test, self.y_test)
+            calibrated_classifier = CalibratedClassifierCV(base_estimator=best_model, method='isotonic', cv='prefit')
+            calibrated_classifier.fit(self.X_test, self.y_test)
 
         end = time.time()
         print('Time consumption: ' + str(round(end - start, 2)) + 's.')
@@ -465,14 +465,14 @@ class Modeling:
             if calibration is None:
                 y_score = best_model.predict(self.X_test)
             else:
-                y_score = calib_clf.predict(self.X_test)
+                y_score = calibrated_classifier.predict(self.X_test)
             return y_score, best_model, best_score, best_params
 
         if self.task == 'bin':
             if calibration is None:
                 y_score = best_model.predict_proba(self.X_test)
             else:
-                y_score = calib_clf.predict_proba(self.X_test)
+                y_score = calibrated_classifier.predict_proba(self.X_test)
             return y_score[:, 1], best_model, best_score, best_params
 
         if self.task == 'mlt':
@@ -480,5 +480,5 @@ class Modeling:
             if calibration is None:
                 y_proba = best_model.predict_proba(self.X_test)
             else:
-                y_proba = calib_clf.predict_proba(self.X_test)
+                y_proba = calibrated_classifier.predict_proba(self.X_test)
             return y_score, y_proba, best_model, best_score, best_params

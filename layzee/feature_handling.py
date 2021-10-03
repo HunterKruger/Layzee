@@ -23,7 +23,7 @@ class FeatureHandling:
         :param groupby: -> str or list of str:
                 group by one or several categorical columns to calculate the values for imputing
         :param col: column name
-        :param method: choose the method of imputing, a customized value is allowed
+        :param method: choose the method {'mean', 'mode', 'median'} for imputing, a customized constant is allowed
         """
 
         if groupby is None:
