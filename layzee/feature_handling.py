@@ -50,15 +50,6 @@ class FeatureHandling:
 
             ### todo: transform on df2
 
-    def manual_imputers(self, method_dict):
-        """
-        Impute missing values in several columns at a time, must specify the imputing method for each column
-        :param method_dict: a dictionary indicating impute method for each column
-                            eg: {col1:'mode', col2:'mean', col3:'other'}
-        """
-        for col in method_dict.keys():
-            self.imputer(col, method_dict[col])
-
     def auto_imputers(self, cat_method='mode', num_method='median'):
         """
         Impute missing values in several columns at a time, automatically detect categorical and numerical features
@@ -122,7 +113,7 @@ class FeatureHandling:
 
         return upper_bound, lower_bound
 
-    def outlier_encoder(self, col, standard_scaling=True, method='cut'):
+    def outlier_encoder(self, col, standard_scaling=False, method='cut'):
         """
         Encode outliers in this column by 3 new features.
         Should not contain missing values, or they will be imputed by median.
@@ -418,15 +409,6 @@ class FeatureHandling2(FeatureHandling):
             else:
                 print("Please set 'groupby' to None!")
             # todo: transform on df2
-
-    def manual_imputers(self, method_dict):
-        """
-        Impute missing values in several columns at a time, must specify the imputing method for each column
-        :param method_dict: a dictionary indicating impute method for each column
-                            eg: {col1:'mode', col2:'mean', col3:'other'}
-        """
-        for col in method_dict.keys():
-            self.imputer(col, method_dict[col])
 
     def auto_imputers(self, cat_method='mode', num_method='median'):
         """

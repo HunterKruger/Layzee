@@ -6,8 +6,8 @@ pd.options.display.max_columns = 100
 pd.options.display.max_rows = 100
 
 """
-for EDA (exploratory data analysis).
-Input parameter 'df' will never be modified.
+For EDA (exploratory data analysis) of a pd.DataFrame.
+All test passed.
 """
 
 
@@ -22,7 +22,7 @@ def read_df_info(df, return_result=False):
     print(str(df.shape[0]) + ' rows, ' + str(df.shape[1]) + ' columns.')
     print('------------------')
     temp = pd.concat([df.dtypes, df.count()], axis=1)
-    temp.columns = ['Dtype', 'Count']
+    temp.columns = ['dtype', 'count']
     uni = pd.DataFrame()
     uni['unique'] = df.nunique()
     uni['unique%'] = uni['unique'] / df.shape[0]
@@ -31,6 +31,7 @@ def read_df_info(df, return_result=False):
     ms['missing%'] = ms['missing'] / df.shape[0]
     temp2 = uni.join(other=ms, how='left')
     result = temp.join(other=temp2, how='left')
+    result.drop('count', axis=1, inplace=True)
     print(result)
     print('------------------')
     if return_result:
@@ -38,14 +39,13 @@ def read_df_info(df, return_result=False):
 
 
 # test passed
-def describe_cat_col(df, col_name, top_n=None, plot_size_x=8, plot_size_y=6, return_result=False):
+def describe_cat_col(df, col_name, top_n=None, plot_size=(8, 6), return_result=False):
     """
     Describe basic stats of a categorical column in a DataFrame.
     :param df: a DataFrame
     :param col_name: column name
     :param top_n: keep top N classes in count table, plot only top N classes
-    :param plot_size_x: size of plot in x-axis
-    :param plot_size_y: size of plot in y-axis
+    :param plot_size: size of plot, tuple
     :param return_result: return stats in a dict if True
     """
 
@@ -69,7 +69,8 @@ def describe_cat_col(df, col_name, top_n=None, plot_size_x=8, plot_size_y=6, ret
         df[col_name].value_counts().nlargest(top_n),
         df[col_name].value_counts(normalize=True).nlargest(top_n),
         df[col_name].value_counts(normalize=True).nlargest(top_n).cumsum()],
-        axis=1)
+        axis=1
+    )
 
     count_table_info.columns = ['Count', '%', 'Cum.%']
     count_table_info = count_table_info.sort_values(by='Count', ascending=False)
@@ -78,7 +79,7 @@ def describe_cat_col(df, col_name, top_n=None, plot_size_x=8, plot_size_y=6, ret
     print(count_table_info)
     print('-------------------------------------')
     # nan will not be plotted
-    plt.subplots(figsize=(plot_size_x, plot_size_y))
+    plt.subplots(figsize=plot_size)
     sns.countplot(y=col_name, data=df, order=df[col_name].value_counts().nlargest(top_n).index)
 
     if return_result:
@@ -93,7 +94,6 @@ def describe_num_col(df, col_name, return_result=False):
     :param col_name: column name
     :param return_result: return stats in a dict if True
     """
-
     q1 = df[col_name].quantile(q=0.25)
     q3 = df[col_name].quantile(q=0.75)
     iqr = q3 - q1
@@ -137,59 +137,39 @@ def describe_num_col(df, col_name, return_result=False):
 
 
 # test passed
-def missing_pattern(df, top_n=5, plot=True, only_missing_col=True):
+def missing_pattern(df, top_n=5):
     """
     Check the missing patterns of a DataFrame
     :param df: a DataFrame
     :param top_n: the top n patterns to be displayed
-    :param plot: plot heatmap to missing pattern if True
-    :param only_missing_col: only plot and print columns with missing values
     """
-    if plot:
-        if only_missing_col:
-            sns.heatmap(df[df.columns[df.isnull().any()].tolist()].isnull(), yticklabels=False, cmap='hot_r',
-                        cbar=False)
-        else:
-            sns.heatmap(df[df.columns.tolist()].isnull(), yticklabels=False, cmap='hot_r', cbar=False)
-    if only_missing_col:
-        df_miss = df[df.columns[df.isnull().any()]].applymap(lambda x: '1' if pd.isna(x) else '0')
-    else:
-        df_miss = df.applymap(lambda x: '1' if pd.isna(x) else '0')
+    sns.heatmap(df[df.columns[df.isnull().any()].tolist()].isnull(), yticklabels=False, cmap='hot_r', cbar=False)
+    df_miss = df[df.columns[df.isnull().any()]].applymap(lambda x: '1' if pd.isna(x) else '0')
     row_miss = df_miss.apply(lambda x: '-'.join(x.values), axis=1)
-    if only_missing_col:
-        print(df.columns[df.isnull().any()].tolist())
-    else:
-        print(df.columns.tolist())
+    print(df.columns[df.isnull().any()].tolist())
     print(row_miss.value_counts().nlargest(top_n))
 
 
 # test passed
-def correlation(df, col_list=None, method='pearson', threshold=None, plot_size_x=7, plot_size_y=6):
+def correlation(df, method='pearson', threshold=1, plot_size_x=7, plot_size_y=6):
     """
     Plot correlation between columns, pairs with correlations larger than the specified threshold will be returned.
     :param df: a DataFrame
-    :param col_list: list of columns to calculate correlations
     :param method: 'pearson', 'spearman', 'kendall'
     :param plot_size_x: plot size in x axis
     :param plot_size_y: plot size in y axis
-    :param threshold: 0~1, return pairs with abs(corr)>threshold if specified
+    :param threshold: 0~1, return pairs with abs(corr)>=threshold if specified
     """
     plt.subplots(figsize=(plot_size_x, plot_size_y))
-    if col_list is None:
-        corr_cols = df.columns.tolist()
-        corr = df.corr(method)
-    else:
-        corr_cols = col_list
-        corr = df[col_list].corr(method)
+    corr_cols = df.columns.tolist()
+    corr = df.corr(method)
     sns.heatmap(corr, annot=True, linewidths=.5, cmap=sns.cm.vlag, vmin=-1, vmax=1)
     plt.show()
 
     result = []
-
-    if threshold:
-        for i in range(len(corr_cols)):
-            for j in range(i):
-                corr_ij = corr.loc[corr_cols[i], corr_cols[j]]
-                if abs(corr_ij) >= threshold:
-                    result.append((corr_cols[i], corr_cols[j], corr_ij))
+    for i in range(len(corr_cols)):
+        for j in range(i):
+            corr_ij = corr.loc[corr_cols[i], corr_cols[j]]
+            if abs(corr_ij) >= threshold:
+                result.append((corr_cols[i], corr_cols[j], corr_ij))
     return result
