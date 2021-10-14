@@ -151,16 +151,15 @@ def missing_pattern(df, top_n=5):
 
 
 # test passed
-def correlation(df, method='pearson', threshold=1, plot_size_x=7, plot_size_y=6):
+def correlation(df, method='pearson', threshold=1, plot_size=(7, 6)):
     """
     Plot correlation between columns, pairs with correlations larger than the specified threshold will be returned.
     :param df: a DataFrame
     :param method: 'pearson', 'spearman', 'kendall'
-    :param plot_size_x: plot size in x axis
-    :param plot_size_y: plot size in y axis
+    :param plot_size: plot size
     :param threshold: 0~1, return pairs with abs(corr)>=threshold if specified
     """
-    plt.subplots(figsize=(plot_size_x, plot_size_y))
+    plt.subplots(figsize=plot_size)
     corr_cols = df.columns.tolist()
     corr = df.corr(method)
     sns.heatmap(corr, annot=True, linewidths=.5, cmap=sns.cm.vlag, vmin=-1, vmax=1)

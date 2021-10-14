@@ -406,43 +406,48 @@ class Modeling:
         optimizer = None
 
         if strategy == 'grid' and 0 < cv < 1:  # grid, hold-out
-            optimizer = GridSearchCV(estimator=internal_model,
-                                     param_grid=hp,
-                                     n_jobs=parallelism_cv,
-                                     scoring=metric,
-                                     refit=True,
-                                     cv=ShuffleSplit(test_size=cv,
-                                                     n_splits=1,
-                                                     random_state=self.random_state)
-                                     )
+            optimizer = GridSearchCV(
+                estimator=internal_model,
+                param_grid=hp,
+                n_jobs=parallelism_cv,
+                scoring=metric,
+                refit=True,
+                cv=ShuffleSplit(test_size=cv,
+                                n_splits=1,
+                                random_state=self.random_state
+                                )
+            )
         if strategy == 'grid' and cv >= 1:  # grid, cv
-            optimizer = GridSearchCV(estimator=internal_model,
-                                     param_grid=hp,
-                                     n_jobs=parallelism_cv,
-                                     cv=cv,
-                                     scoring=metric,
-                                     refit=True
-                                     )
+            optimizer = GridSearchCV(
+                estimator=internal_model,
+                param_grid=hp,
+                n_jobs=parallelism_cv,
+                cv=cv,
+                scoring=metric,
+                refit=True
+            )
         if strategy == 'random' and 0 < cv < 1:  # random, hold-out
-            optimizer = RandomizedSearchCV(estimator=internal_model,
-                                           param_distributions=hp,
-                                           n_iter=max_iter,
-                                           n_jobs=parallelism_cv,
-                                           refit=True,
-                                           scoring=metric,
-                                           cv=ShuffleSplit(test_size=cv,
-                                                           n_splits=1,
-                                                           random_state=self.random_state)
-                                           )
+            optimizer = RandomizedSearchCV(
+                estimator=internal_model,
+                param_distributions=hp,
+                n_iter=max_iter,
+                n_jobs=parallelism_cv,
+                refit=True,
+                scoring=metric,
+                cv=ShuffleSplit(test_size=cv,
+                                n_splits=1,
+                                random_state=self.random_state)
+            )
         if strategy == 'random' and cv >= 1:  # random, cv
-            optimizer = RandomizedSearchCV(estimator=internal_model,
-                                           param_distributions=hp,
-                                           n_iter=max_iter,
-                                           n_jobs=parallelism_cv,
-                                           cv=cv,
-                                           scoring=metric,
-                                           refit=True
-                                           )
+            optimizer = RandomizedSearchCV(
+                estimator=internal_model,
+                param_distributions=hp,
+                n_iter=max_iter,
+                n_jobs=parallelism_cv,
+                cv=cv,
+                scoring=metric,
+                refit=True
+            )
 
         optimizer.fit(self.X_train, self.y_train)
         best_model = optimizer.best_estimator_

@@ -34,7 +34,7 @@ def pca(X, n):
     :param X: df without target, encoded
     :param n:
         if int, number of components
-        if decimal >0 and <1, select the number of components such that the amount of variance that needs to be
+        if  0 < decimal < 1, select the number of components such that the amount of variance that needs to be
             explained is greater than the percentage specified by n_components
     :return
         reduced X

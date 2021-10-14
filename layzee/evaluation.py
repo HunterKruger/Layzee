@@ -122,12 +122,12 @@ class RegEvaluation(Evaluation):
             print(str(k) + ': ' + str(v))
         print('--------------------------------------')
         shapiro_test = shapiro(error_clipped)
-        print('W test statistic: ' + str(shapiro_test.statistic))
-        print('p-value: ' + str(shapiro_test.pvalue))
+        print('Shapiro test:')
+        print(shapiro_test)
         if shapiro_test.pvalue >= 0.05:
             print('<Error is normally distributed> cannot be rejected.')
         else:
-            print('Error is not normally distributed.')
+            print('<Error is normally distributed> can be rejected.')
         print('--------------------------------------')
         print('Error plot & QQ plot for 2% ~ 98% quantile')
         sns.displot(data=error_clipped)

@@ -331,18 +331,18 @@ class FeatureHandling:
         if one_hot_cols is None:
             one_hot_cols = []
             df1_cat = pd.DataFrame()
-        elif one_hot_cols == 'auto':
-            one_hot_cols = self.df.select_dtypes(include='object').columns.tolist()
         else:
+            if one_hot_cols == 'auto':
+                one_hot_cols = self.df.select_dtypes(include='object').columns.tolist()
             cls_cat1 = ohe.fit_transform(self.df[one_hot_cols]).toarray()
             df1_cat = pd.DataFrame(data=cls_cat1, columns=ohe.get_feature_names(one_hot_cols).tolist())
 
         if num_cols is None:
             num_cols = []
             df1_num = pd.DataFrame()
-        elif num_cols == 'auto':
-            num_cols = self.df.select_dtypes(include='number').columns.tolist()
         else:
+            if num_cols == 'auto':
+                num_cols = self.df.select_dtypes(include='number').columns.tolist()
             cls_num1 = ss.fit_transform(self.df[num_cols])
             df1_num = pd.DataFrame(cls_num1, columns=num_cols)
 
@@ -692,9 +692,9 @@ class FeatureHandling2(FeatureHandling):
             one_hot_cols = []
             df1_cat = pd.DataFrame()
             df2_cat = pd.DataFrame()
-        elif one_hot_cols == 'auto':
-            one_hot_cols = self.df.select_dtypes(include='object').columns.tolist()
         else:
+            if one_hot_cols == 'auto':
+                one_hot_cols = self.df.select_dtypes(include='object').columns.tolist()
             cls_cat1 = ohe.fit_transform(self.df[one_hot_cols]).toarray()
             df1_cat = pd.DataFrame(data=cls_cat1, columns=ohe.get_feature_names(one_hot_cols).tolist())
             cls_cat2 = ohe.transform(self.df2[one_hot_cols]).toarray()
@@ -704,9 +704,9 @@ class FeatureHandling2(FeatureHandling):
             num_cols = []
             df1_num = pd.DataFrame()
             df2_num = pd.DataFrame()
-        elif num_cols == 'auto':
-            num_cols = self.df.select_dtypes(include='number').columns.tolist()
         else:
+            if num_cols == 'auto':
+                num_cols = self.df.select_dtypes(include='number').columns.tolist()
             cls_num1 = ss.fit_transform(self.df[num_cols])
             df1_num = pd.DataFrame(cls_num1, columns=num_cols)
             cls_num2 = ss.transform(self.df2[num_cols])

@@ -5,6 +5,7 @@ from sklearn.model_selection import StratifiedShuffleSplit
 import seaborn as sns
 from matplotlib import pyplot as plt
 from sklearn.metrics import roc_auc_score
+from scipy.stats import ks_2samp
 
 pd.options.display.max_columns = 100
 pd.options.display.max_rows = 100
@@ -84,16 +85,14 @@ def adversarial_detection(df_train, df_test, target_col=None, roc_tolerance=0.00
                 break
 
 
-def categorical_detection(df_train, df_test, col_name, top_n=None, plot_size_x=12, plot_size_y=12,
-                          return_result=False):
+def categorical_detection(df_train, df_test, col_name, top_n=None, plot_size=(12, 12), return_result=False):
     """
     Compare a numerical feature in 2 dataframes.
     :param df_train: training set
     :param df_test: test set
     :param col_name: column name of this categorical feature
-    :param top_n: top n classes to be counted and plotted
-    :param plot_size_x: plot size in x-axis
-    :param plot_size_y: plot size in y-axis
+    :param top_n: top n classes in df_train to be counted and plotted
+    :param plot_size: plot size (x, y)
     :param return_result: return result if True
     :return: all plotted stats
     """
@@ -119,6 +118,7 @@ def categorical_detection(df_train, df_test, col_name, top_n=None, plot_size_x=1
 
     if top_n is None:
         top_n = len(df_train[col_name].value_counts())
+
     print('-----------------df_train top ' + str(top_n) + ' values:--------------------')
     count_table_info1 = pd.concat([
         df_train[col_name].value_counts().nlargest(top_n),
@@ -147,7 +147,7 @@ def categorical_detection(df_train, df_test, col_name, top_n=None, plot_size_x=1
     count_table_info2.columns = [col_name, 'Count', '%', 'Cum.%']
     print(count_table_info2)
 
-    fig = plt.figure(figsize=(plot_size_x, plot_size_y))
+    fig = plt.figure(figsize=plot_size)
     ax1 = plt.subplot2grid((1, 2), (0, 0))
     plt.pie(count_table_info1['Count'][:top_n], labels=count_table_info1[col_name][:top_n], autopct='%1.2f%%')
     plt.title(col_name + ' in df1')
@@ -159,17 +159,17 @@ def categorical_detection(df_train, df_test, col_name, top_n=None, plot_size_x=1
         return result_df, count_table_info1, count_table_info2
 
 
-def numerical_detection(df_train, df_test, col_name, plot_size_x=10, plot_size_y=5, return_result=False):
+def numerical_detection(df_train, df_test, col_name, plot_size=(10, 5), return_result=False):
     """
     Compare a numerical feature in 2 dataframes.
     :param df_train: training set
     :param df_test: test set
     :param col_name: column name of this categorical feature
-    :param plot_size_x: plot size in x-axis
-    :param plot_size_y: plot size in y-axis
+    :param plot_size: plot size (x,y)
     :param return_result: return result if True
     :return: all plotted stats
     """
+
     q1_1 = df_train[col_name].quantile(q=0.25)
     q3_1 = df_train[col_name].quantile(q=0.75)
     iqr_1 = q3_1 - q1_1
@@ -232,7 +232,18 @@ def numerical_detection(df_train, df_test, col_name, plot_size_x=10, plot_size_y
     result_df['df_train'] = result1.values()
     result_df['df_test'] = result2.values()
 
+    print('Statistics:')
     print(result_df)
+    print()
+
+    print('Kolmogorov-Smirnov test:')
+    ks_result = ks_2samp(df_train[col_name], df_test[col_name])
+    print(ks_result)
+    if ks_result.pvalue > 0.05:
+        print('<These 2 distributions follows the same distribution> cannot be rejected.')
+    else:
+        print('<These 2 distributions follows the same distribution> can be rejected.')
+    print()
 
     plot_min = min(df_train[col_name].min(), df_test[col_name].min())
     plot_max = max(df_train[col_name].max(), df_test[col_name].max())
@@ -242,10 +253,8 @@ def numerical_detection(df_train, df_test, col_name, plot_size_x=10, plot_size_y
     df_plot_2 = df_test[col_name].to_frame()
     df_plot_2['label'] = 'df_test'
     df_plot = pd.concat([df_plot_1, df_plot_2], axis=0)
-    # print(df_plot)
-    # sns.displot(data=df_plot, x=col_name, hue="label", kind='kde')
 
-    fig, ax = plt.subplots(3, 1, figsize=(plot_size_x, plot_size_y))
+    fig, ax = plt.subplots(3, 1, figsize=plot_size)
     ax[0].set_xlim(plot_min, plot_max)
     ax[1].set_xlim(plot_min, plot_max)
     sns.histplot(data=df_train, x=col_name, kde=True, ax=ax[0])
