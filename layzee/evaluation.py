@@ -284,7 +284,6 @@ class BinClsEvaluation(Evaluation):
 
     def calibration_curve(self, bins=10):
         """
-        :param label: label name, not encoded
         :param bins: number of bins
         """
         fraction_of_positives, mean_predicted_value = calibration_curve(self.y_true, self.y_score, n_bins=bins)
