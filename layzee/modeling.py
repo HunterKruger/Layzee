@@ -367,8 +367,7 @@ class Modeling:
         if self.task == 'mlt':
             return mlt_model_mapper[model]
 
-    def modeling(self, model, metric, cv=3, hp='auto', strategy='grid', max_iter=10, parallelism_cv=-1,
-                 calibration=None):
+    def modeling(self, model, metric, cv=3, hp='auto', strategy='grid', max_iter=10, parallelism_cv=-1, calibration=None):
         """
         Modeling with a model and its specified hyper-parameters.
         :param model: a model name in short, check 'model_mapping' function

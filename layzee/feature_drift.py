@@ -31,8 +31,7 @@ def adversarial_detection(df_train, df_test, target_col=None, roc_tolerance=0.00
     df_train_ = df_train.copy()
     df_test_ = df_test.copy()
 
-    print('roc safe range: [' + str(round((0.5 - roc_tolerance), 4)) + ', ' +
-          str(round((0.5 + roc_tolerance), 4)) + ']')
+    print('roc safe range: [' + str(round((0.5 - roc_tolerance), 4)) + ', ' + str(round((0.5 + roc_tolerance), 4)) + ']')
 
     df_train_['fake_label'] = 0
     df_test_['fake_label'] = 1

@@ -50,12 +50,10 @@ def auto_imputers(df, df2, cat_method='mode', num_method='median'):
     :param num_method: imputing method for numerical features
     """
     for col in df.select_dtypes('object').columns.tolist():
-        df = imputer(df, col, cat_method)
-        df2 = imputer(df2, col, cat_method)
+        df, df2 = imputer(df, df2, col, cat_method)
 
     for col in df.select_dtypes('number').columns.tolist():
-        df = imputer(df, col, num_method)
-        df2 = imputer(df2, col, num_method)
+        df, df2 = imputer(df, df2, col, num_method)
 
     return df, df2
 
@@ -182,7 +180,7 @@ def handle_skewness(df, df2, col, threshold=1, drop_origin=True):
     return df, df2
 
 
-def general_encoder(df, df2, num_cols='auto', ordinal_cols=None, one_hot_cols='auto', drop=None):
+def general_encoder(df, df2, num_cols='auto', ordinal_cols=None, one_hot_cols='auto', drop=None, return_encoders=False):
     """
     A general encoder to transform numerical, categorical and ordinal features.
     :param df: a dataframe
@@ -260,4 +258,7 @@ def general_encoder(df, df2, num_cols='auto', ordinal_cols=None, one_hot_cols='a
         axis=1
     )
 
-    return df_encoded, df2_encoded
+    if return_encoders:
+        return df_encoded, df2_encoded, ohe, ss, oe
+    else:
+        return df_encoded, df2_encoded

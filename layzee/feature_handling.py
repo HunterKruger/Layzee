@@ -167,7 +167,7 @@ def handle_skewness(df, col, threshold=1, drop_origin=True):
     return df
 
 
-def general_encoder(df, num_cols='auto', ordinal_cols=None, one_hot_cols='auto', drop=None):
+def general_encoder(df, num_cols='auto', ordinal_cols=None, one_hot_cols='auto', drop=None, return_encoders=False):
     """
     A general encoder to transform numerical, categorical and ordinal features.
     :param df: a dataframe
@@ -183,8 +183,7 @@ def general_encoder(df, num_cols='auto', ordinal_cols=None, one_hot_cols='auto',
     :param one_hot_cols: list of categorical columns to be one-hot encoded;
                          select all categorical columns if 'auto'
     :param ordinal_cols: list of ordinal columns to be ordinal encoded
-    :return
-        encoded df
+    :param return_encoders:  return 3 types of encoders
     """
 
     if drop is None:
@@ -225,4 +224,7 @@ def general_encoder(df, num_cols='auto', ordinal_cols=None, one_hot_cols='auto',
         [df1_num.reset_index(drop=True), df1_cat.reset_index(drop=True), df1_ord.reset_index(drop=True),
          df[cls_rest].copy().reset_index(drop=True)], axis=1)
 
-    return df_encoded
+    if return_encoders:
+        return df_encoded, ohe, ss, oe
+    else:
+        return df_encoded

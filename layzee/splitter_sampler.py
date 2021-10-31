@@ -1,4 +1,3 @@
-
 from sklearn.model_selection import train_test_split
 
 
@@ -43,3 +42,25 @@ def split_train_test(train, test, target):
     :param test: test set with features and target
     """
     return train.drop(target, axis=1), test.drop(target, axis=1), train[target], test[target]
+
+
+def sampler(df, n, col=None, random_state=1337):
+    """
+    Random/Stratified sampling
+    :param df: a DataFrame
+    :param n: samples or fraction
+    :param col: column name for stratified sampling
+    :param random_state: random state
+    """
+    if 0 < n < 1 and col is None:
+        return df.sample(n=n, random_state=random_state)
+    if n > 1 and col is None:
+        return df.sample(frac=n, random_state=random_state)
+    if 0 < n < 1 and col is not None:
+        new_df, _ = train_test_split(df, test_size=1-n, stratify=df[[col]], random_state=random_state)
+        return new_df
+    if n > 1 and col is not None:
+        new_df, _ = train_test_split(df, test_size=(len(df)-n)/len(df), stratify=df[[col]], random_state=random_state)
+        return new_df
+
+
