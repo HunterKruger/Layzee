@@ -25,6 +25,6 @@ The following notebooks are quick tutorials for supervised learning:
 * In terminal, run 
 ```bash
     $ cd ./Layzee
-    $ pip3 install .
+    $ pip3 install .  ##or##  python setup.py install
 ```
 * To uninstall, run `$ pip3 uninstall layzee`
