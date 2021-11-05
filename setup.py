@@ -13,7 +13,7 @@ with open("README.md", "r") as fh:
 
 package = importlib.import_module(config["project_name"])
 
-setuptools.setup(
+setup(
     name=config["project_name"],
     version=package.__version__,
     url=config['project_url'],
