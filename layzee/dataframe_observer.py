@@ -1,5 +1,6 @@
 import pandas as pd
 import seaborn as sns
+import numpy as np
 from matplotlib import pyplot as plt
 from scipy.stats import shapiro, chi2_contingency, f_oneway
 
@@ -141,7 +142,10 @@ def describe_num_col(df, col_name, plot_size=None, return_result=False, file_nam
     for k, v in result.items():
         print(str(k) + ': ' + str(v))
     print('-------------------------------------')
-    shapiro_test = shapiro(df[col_name])
+    min_clipped = np.quantile(df[col_name], q=0.02)
+    max_clipped = np.quantile(df[col_name], q=0.98)
+    clipped = np.array([x for x in df[col_name] if max_clipped >= x >= min_clipped])
+    shapiro_test = shapiro(clipped)
     print('Shapiro-Wilk statistic: ', shapiro_test.statistic)
     print('Significance level: 0.05')
     print('p-value: ', shapiro_test.pvalue)
