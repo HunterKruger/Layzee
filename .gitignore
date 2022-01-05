@@ -2,3 +2,5 @@
 .idea
 *.csv
 *.pyc
+data/churn_metadata.xlsx
+data/churn_metadata.xlsx

@@ -57,10 +57,9 @@ def sampler(df, n, col=None, random_state=1337):
     if n > 1 and col is None:
         return df.sample(frac=n, random_state=random_state)
     if 0 < n < 1 and col is not None:
-        new_df, _ = train_test_split(df, test_size=1-n, stratify=df[[col]], random_state=random_state)
+        new_df, _ = train_test_split(df, test_size=1 - n, stratify=df[[col]], random_state=random_state)
         return new_df
     if n > 1 and col is not None:
-        new_df, _ = train_test_split(df, test_size=(len(df)-n)/len(df), stratify=df[[col]], random_state=random_state)
+        new_df, _ = train_test_split(df, test_size=(len(df) - n) / len(df), stratify=df[[col]],
+                                     random_state=random_state)
         return new_df
-
-
