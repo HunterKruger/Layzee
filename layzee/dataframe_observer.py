@@ -142,8 +142,8 @@ def describe_num_col(df, col_name, plot_size=None, return_result=False, file_nam
     for k, v in result.items():
         print(str(k) + ': ' + str(v))
     print('-------------------------------------')
-    min_clipped = np.quantile(df[col_name], q=0.02)
-    max_clipped = np.quantile(df[col_name], q=0.98)
+    min_clipped = df[col_name].quantile(q=0.02)
+    max_clipped = df[col_name].quantile(q=0.98)
     clipped = np.array([x for x in df[col_name] if max_clipped >= x >= min_clipped])
     shapiro_test = shapiro(clipped)
     print('Shapiro-Wilk statistic: ', shapiro_test.statistic)
