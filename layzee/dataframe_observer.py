@@ -41,12 +41,13 @@ def read_df_info(df, return_result=False):
 
 
 # test passed
-def describe_cat_col(df, col_name, top_n=None, plot_size=(8, 6), return_result=False, file_name=None):
+def describe_cat_col(df, col_name, top_n=None, plot=True, plot_size=(8, 6), return_result=False, file_name=None):
     """
     Describe basic stats of a categorical column in a DataFrame.
     :param df: a DataFrame
     :param col_name: column name
     :param top_n: keep top N classes in count table, plot only top N classes
+    :param plot: do plot
     :param plot_size: (x, y)
     :param return_result: return stats in a dict if True
     :param file_name: path + filename to save the plot
@@ -83,26 +84,28 @@ def describe_cat_col(df, col_name, top_n=None, plot_size=(8, 6), return_result=F
     print(count_table_info)
     print('-------------------------------------')
 
-    if plot_size is not None:
-        sns.set(rc={'figure.figsize': plot_size})
-    plt.figure()
-    # nan will not be plotted
-    plot = sns.countplot(y=col_name, data=df, order=df[col_name].value_counts().nlargest(top_n).index)
+    if plot:
+        if plot_size is not None:
+            sns.set(rc={'figure.figsize': plot_size})
+        plt.figure()
+        # nan will not be plotted
+        plot = sns.countplot(y=col_name, data=df, order=df[col_name].value_counts().nlargest(top_n).index)
 
-    if file_name is not None:
-        fig = plot.get_figure()
-        fig.savefig(file_name)
+        if file_name is not None:
+            fig = plot.get_figure()
+            fig.savefig(file_name)
 
     if return_result:
         return result, count_table_info
 
 
 # test passed
-def describe_num_col(df, col_name, plot_size=None, return_result=False, file_name=None):
+def describe_num_col(df, col_name, plot=True, plot_size=None, return_result=False, file_name=None):
     """
     Describe basic stats of a categorical column in a DataFrame.
     :param df: a DataFrame
     :param col_name: column name
+    :param plot: do plot
     :param plot_size: (x, y)
     :param file_name: path + filename to save the plot
     :param return_result: return stats in a dict if True
@@ -160,27 +163,27 @@ def describe_num_col(df, col_name, plot_size=None, return_result=False, file_nam
         result['norm_dist'] = False
     print('-------------------------------------')
 
-    if plot_size is not None:
-        sns.set(rc={'figure.figsize': plot_size})
-
-    plt.figure()
-    fig, ax = plt.subplots(2, 1)
-    sns.histplot(data=df, x=col_name, kde=True, ax=ax[0])
-    sns.boxplot(x=df[col_name], ax=ax[1])
-
-    if file_name is not None:
-        fig.savefig(file_name)
+    if plot:
+        if plot_size is not None:
+            sns.set(rc={'figure.figsize': plot_size})
+        plt.figure()
+        fig, ax = plt.subplots(2, 1)
+        sns.histplot(data=df, x=col_name, kde=True, ax=ax[0])
+        sns.boxplot(x=df[col_name], ax=ax[1])
+        if file_name is not None:
+            fig.savefig(file_name)
 
     if return_result:
         return result
 
 
-def describe_num_num(df, num_col1, num_col2, plot_size=None, return_result=False, file_name=None):
+def describe_num_num(df, num_col1, num_col2, plot=True, plot_size=None, return_result=False, file_name=None):
     """
     Observe two numerical columns.
     :param df: a DataFrame
     :param num_col1: 1st numerical column name
     :param num_col2: 2nd numerical column name
+    :param plot: do plot
     :param plot_size: (x,y)
     :param file_name: to save plot
     :param return_result: return result in dict
@@ -192,31 +195,32 @@ def describe_num_num(df, num_col1, num_col2, plot_size=None, return_result=False
         'type2': df[num_col2].dtype
     }
 
-    if plot_size is not None:
-        sns.set(rc={'figure.figsize': plot_size})
-    plt.figure()
-    plot = sns.scatterplot(data=df, x=num_col1, y=num_col2)
-
     corr = df[[num_col1, num_col2]].corr()
     corr_value = corr[num_col1][1]
     print('Pearson correlation: ', corr_value)
     result['Pearson_corr'] = corr_value
 
-    if file_name is not None:
-        fig = plot.get_figure()
-        fig.savefig(file_name)
+    if plot:
+        if plot_size is not None:
+            sns.set(rc={'figure.figsize': plot_size})
+        plt.figure()
+        plot = sns.scatterplot(data=df, x=num_col1, y=num_col2)
+        if file_name is not None:
+            fig = plot.get_figure()
+            fig.savefig(file_name)
 
     if return_result:
         return result
 
 
-def describe_cat_cat(df, cat_col1, cat_col2, plot_size=None, return_result=False, file_name=None):
+def describe_cat_cat(df, cat_col1, cat_col2, plot=True, plot_size=None, return_result=False, file_name=None):
     """
     Observe two numerical columns.
     :param df: a DataFrame
     :param cat_col1: 1st categorical column
     :param cat_col2: 2nd categorical column
     :param return_result: return result in dict
+    :param plot: do plot
     :param plot_size: (x,y)
     :param file_name: path + filename to save the plot
     """
@@ -227,11 +231,6 @@ def describe_cat_cat(df, cat_col1, cat_col2, plot_size=None, return_result=False
               }
 
     cross_table = pd.crosstab(df[cat_col1], df[cat_col2], margins=False)
-
-    if plot_size is not None:
-        sns.set(rc={'figure.figsize': plot_size})
-    plt.figure()
-    plot = sns.heatmap(cross_table, annot=True, fmt="d", linewidths=.5, cmap=sns.cm.rocket_r, vmin=0)
 
     sig_lv = 0.05
     chi_value, p_value, deg_free, _ = chi2_contingency(cross_table)
@@ -250,15 +249,20 @@ def describe_cat_cat(df, cat_col1, cat_col2, plot_size=None, return_result=False
         result['independent'] = False
         print('<' + cat_col1 + ' and ' + cat_col2 + ' are independent> can be rejected.')
 
-    if file_name is not None:
-        fig = plot.get_figure()
-        fig.savefig(file_name)
+    if plot:
+        if plot_size is not None:
+            sns.set(rc={'figure.figsize': plot_size})
+        plt.figure()
+        plot = sns.heatmap(cross_table, annot=True, fmt="d", linewidths=.5, cmap=sns.cm.rocket_r, vmin=0)
+        if file_name is not None:
+            fig = plot.get_figure()
+            fig.savefig(file_name)
 
     if return_result:
         return result
 
 
-def describe_cat_num(df, num_col, cat_col,
+def describe_cat_num(df, num_col, cat_col, plot=True,
                      plot_size=None, return_result=False, file_name=None):
     """
     :param df: a DataFrame
@@ -275,16 +279,15 @@ def describe_cat_num(df, num_col, cat_col,
         'type2': df[cat_col].dtype
     }
 
-    if plot_size is not None:
-        sns.set(rc={'figure.figsize': plot_size})
-    plt.figure()
-
-    fig, ax = plt.subplots(2, 1)
-    sns.boxplot(x=cat_col, y=num_col, data=df, ax=ax[0])
-    sns.violinplot(x=cat_col, y=num_col, data=df, ax=ax[1], inner="quartile")
-
-    if file_name is not None:
-        fig.savefig(file_name)
+    if plot:
+        if plot_size is not None:
+            sns.set(rc={'figure.figsize': plot_size})
+        plt.figure()
+        fig, ax = plt.subplots(2, 1)
+        sns.boxplot(x=cat_col, y=num_col, data=df, ax=ax[0])
+        sns.violinplot(x=cat_col, y=num_col, data=df, ax=ax[1], inner="quartile")
+        if file_name is not None:
+            fig.savefig(file_name)
 
     uniques = df[cat_col].dropna().unique().tolist()
     list_unique = [df[num_col][df[cat_col] == x].tolist() for x in uniques]
@@ -306,29 +309,33 @@ def describe_cat_num(df, num_col, cat_col,
         return result
 
 
-def auto_describe_col(df, col, plot_size=None, return_result=False, file_name=None):
+def auto_describe_col(df, col, plot=True, plot_size=None, return_result=False, file_name=None):
     """
     Automatically describe a column in a DataFrame
     :param df: a DataFrame
     :param col: column name
     :param return_result: return result in dict
+    :param plot: do plot
     :param plot_size: (x,y)
     :param file_name: path + filename to save the plot
     """
     if df[col].dtype == 'object':
-        result, _ = describe_cat_col(df, col, plot_size=plot_size, return_result=return_result, file_name=file_name)
+        result, _ = describe_cat_col(df, col, plot=plot, plot_size=plot_size, return_result=return_result,
+                                     file_name=file_name)
     else:
-        result = describe_num_col(df, col, plot_size=plot_size, return_result=return_result, file_name=file_name)
+        result = describe_num_col(df, col, plot=plot, plot_size=plot_size, return_result=return_result,
+                                  file_name=file_name)
     return result
 
 
-def auto_describe_pair(df, col1, col2, plot_size=None, return_result=False, file_name=None):
+def auto_describe_pair(df, col1, col2, plot=True, plot_size=None, return_result=False, file_name=None):
     """
     Automatically describe a pair of columns in a DataFrame
     :param df: a DataFrame
     :param col1: 1st column
     :param col2: 2nd column
     :param return_result: return result in dict
+    :param plot: do plot
     :param plot_size: (x,y)
     :param file_name: path + filename to save the plot
     """
@@ -336,39 +343,44 @@ def auto_describe_pair(df, col1, col2, plot_size=None, return_result=False, file
     col_type2 = df[col2].dtype
     if col_type1 != 'object' and col_type2 != 'object':
         return describe_num_num(
-            df=df, num_col1=col1, num_col2=col2,
+            df=df, num_col1=col1, num_col2=col2, plot=plot,
             plot_size=plot_size, return_result=return_result, file_name=file_name
         )
     if col_type1 == 'object' and col_type2 == 'object':
         return describe_cat_cat(
-            df=df, cat_col1=col1, cat_col2=col2,
+            df=df, cat_col1=col1, cat_col2=col2, plot=plot,
             plot_size=plot_size, return_result=return_result, file_name=file_name
         )
     if col_type1 == 'object' and col_type2 != 'object':
         return describe_cat_num(
-            df=df, cat_col=col1, num_col=col2,
+            df=df, cat_col=col1, num_col=col2, plot=plot,
             plot_size=plot_size, return_result=return_result, file_name=file_name
         )
     if col_type1 != 'object' and col_type2 == 'object':
         return describe_cat_num(
-            df=df, cat_col=col2, num_col=col1,
+            df=df, cat_col=col2, num_col=col1, plot=plot,
             plot_size=plot_size, return_result=return_result, file_name=file_name
         )
 
 
 # test passed
-def missing_pattern(df, top_n=5, plot_size=None, file_name=None):
+def missing_pattern(df, top_n=5, plot=True, plot_size=None, file_name=None):
     """
     Check the missing patterns of a DataFrame
     :param df: a DataFrame
     :param top_n: the top n patterns to be displayed
+    :param plot: do plot
     :param plot_size: (x,y)
     :param file_name: path + filename to save the plot
     """
-    if plot_size is not None:
-        sns.set(rc={'figure.figsize': plot_size})
-    plt.figure()
-    plot = sns.heatmap(df[df.columns[df.isnull().any()].tolist()].isnull(), yticklabels=False, cmap='hot_r', cbar=False)
+    if plot:
+        if plot_size is not None:
+            sns.set(rc={'figure.figsize': plot_size})
+        plt.figure()
+        plot = sns.heatmap(df[df.columns[df.isnull().any()].tolist()].isnull(), yticklabels=False, cmap='hot_r', cbar=False)
+        if file_name is not None:
+            fig = plot.get_figure()
+            fig.savefig(file_name)
 
     df_miss = df[df.columns[df.isnull().any()]].applymap(lambda x: '1' if pd.isna(x) else '0')
     row_miss = df_miss.apply(lambda x: '-'.join(x.values), axis=1)
@@ -380,19 +392,16 @@ def missing_pattern(df, top_n=5, plot_size=None, file_name=None):
     result_df['PATTERN_COUNT'] = top_miss_rows_count
     result_df.set_index('PATTERN_COUNT', inplace=True)
 
-    if file_name is not None:
-        fig = plot.get_figure()
-        fig.savefig(file_name)
-
     return result_df
 
 
 # test passed
-def correlation(df, method='pearson', k=None, plot_size=None, file_name=None):
+def correlation(df, method='pearson', k=None, plot=True, plot_size=None, file_name=None):
     """
     Plot correlation between columns, pairs with correlations larger than the specified threshold will be returned.
     :param df: a DataFrame
     :param method: 'pearson', 'spearman', 'kendall'
+    :param plot: do plot
     :param plot_size: (x,y)
     :param k:
         None, return corr matrix
@@ -403,14 +412,14 @@ def correlation(df, method='pearson', k=None, plot_size=None, file_name=None):
     corr_cols = df.columns.tolist()
     corr = df.corr(method)
 
-    if plot_size is not None:
-        sns.set(rc={'figure.figsize': plot_size})
-    plt.figure()
-    plot = sns.heatmap(corr, annot=True, linewidths=.5, cmap=sns.cm.vlag, vmin=-1, vmax=1)
-
-    if file_name is not None:
-        fig = plot.get_figure()
-        fig.savefig(file_name)
+    if plot:
+        if plot_size is not None:
+            sns.set(rc={'figure.figsize': plot_size})
+        plt.figure()
+        plot = sns.heatmap(corr, annot=True, linewidths=.5, cmap=sns.cm.vlag, vmin=-1, vmax=1)
+        if file_name is not None:
+            fig = plot.get_figure()
+            fig.savefig(file_name)
 
     if k is None:
         return corr

@@ -50,7 +50,7 @@ df_info.to_excel(writer, sheet_name="df_info")
 # cat col stats
 cat_col_stats = []
 for col in cat_cols:
-    stats, _ = describe_cat_col(df, col, return_result=True)
+    stats, _ = describe_cat_col(df, col, plot=False, return_result=True)
     cat_col_stats.append(stats)
 cat_col_stats = pd.DataFrame(cat_col_stats)
 cat_col_stats.set_index('Name', inplace=True)
@@ -59,7 +59,7 @@ cat_col_stats.to_excel(writer, sheet_name="cat_cols_stats")
 # num col stats
 num_col_stats = []
 for col in num_cols:
-    stats = describe_num_col(df, col, return_result=True)
+    stats = describe_num_col(df, col, plot=False, return_result=True)
     num_col_stats.append(stats)
 num_col_stats = pd.DataFrame(num_col_stats)
 num_col_stats.set_index('Name', inplace=True)
