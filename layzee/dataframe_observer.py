@@ -402,7 +402,7 @@ def correlation(df, method='pearson', k=None, plot=True, plot_size=None, file_na
     :param df: a DataFrame
     :param method: 'pearson', 'spearman', 'kendall'
     :param plot: do plot
-    :param plot_size: (x,y)
+    :param plot_size: (x, y)
     :param k:
         None, return corr matrix
         0~1, return pairs with abs(corr)>=threshold and corr matrix
