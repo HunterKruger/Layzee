@@ -1,72 +1,56 @@
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import GridSearchCV
-from sklearn.model_selection import StratifiedShuffleSplit
+
 import seaborn as sns
 from matplotlib import pyplot as plt
 from sklearn.metrics import roc_auc_score
-from scipy.stats import ks_2samp
+from scipy.stats import ks_2samp, chi2_contingency
+from layzee.splitter_sampler import split_df
 
 pd.options.display.max_columns = 100
 pd.options.display.max_rows = 100
 
 
 # test passed
-def adversarial_detection(df_train, df_test, target_col=None, roc_tolerance=0.005, random_state=1234,
-                          return_result=False):
+def adversarial_detection(df_train, df_test, roc_tolerance=0.05, random_state=1234):
     """
     By training an Adversarial Classifier to determine whether there is feature drift.
     The most important feature will be dropped and the Adversarial Classifier will be retrained at each iteration
     until auc_roc reduces into a specified tolerance range.
     Reference: https://zhuanlan.zhihu.com/p/349432455
-    :param df_train: training set; remember to drop id features!
-    :param df_test: test set; remember to drop id features!
-    :param target_col: name of the target column, which will be dropped from df_train and df_test if specified
+    :param df_train: training set; remember to drop id features and target!
+    :param df_test: test set; remember to drop id features and target!
     :param roc_tolerance: tolerance of auroc
         eg: 0.005 -> raise feature drift warning when  0.495 < auroc < 0.505
     :param random_state: random state seed
-    :param return_result: return df_train & df_test without deleted features if True
-
     """
     df_train_ = df_train.copy()
     df_test_ = df_test.copy()
 
-    print('roc safe range: [' + str(round((0.5 - roc_tolerance), 4)) + ', ' + str(round((0.5 + roc_tolerance), 4)) + ']')
+    print(
+        'roc safe range: [' + str(round((0.5 - roc_tolerance), 4)) + ', ' + str(round((0.5 + roc_tolerance), 4)) + ']')
 
     df_train_['fake_label'] = 0
     df_test_['fake_label'] = 1
 
-    if target_col is not None:
-        df_train_.drop(target_col, axis=1, inplace=True)
-        df_test_.drop(target_col, axis=1, inplace=True)
-
     df_all = pd.concat([df_train_, df_test_], axis=0)
-    X = df_all.drop('fake_label', axis=1)
-    y = df_all['fake_label']
+    df_all = df_all.sample(frac=1)
+    df_all.reset_index(inplace=True)
+    df_all.drop('index', axis=1, inplace=True)
 
-    sss = StratifiedShuffleSplit(n_splits=1, test_size=0.25, train_size=0.75, random_state=random_state)
-
-    X_train, X_test = None, None
-    y_train, y_test = None, None
-
-    for train_index, test_index in sss.split(X, y):
-        X_train, X_test = X.loc[X.index.intersection(train_index)], X.loc[X.index.intersection(test_index)]
-        y_train, y_test = y.loc[y.index.intersection(train_index)], y.loc[y.index.intersection(test_index)]
+    X_train, X_test, y_train, y_test = split_df(df_all, test_ratio=0.5, target='fake_label', random_state=random_state)
 
     features_to_drop = []
 
-    model = RandomForestClassifier(random_state=random_state)
-    hp = {'n_estimators': [50, 100, 200], 'max_depth': [3, 5, 7]}
-    optimizer = GridSearchCV(estimator=model, param_grid=hp, n_jobs=-1, cv=3, scoring='roc_auc', refit=True)
+    model = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=random_state)
 
     while True:
-        optimizer.fit(X_train, y_train)
-        best_model = optimizer.best_estimator_
-        y_score = best_model.predict_proba(X_test)[:, 1]
+        model.fit(X_train, y_train)
+        y_score = model.predict_proba(X_test)[:, 1]
         roc = roc_auc_score(y_test, y_score)
 
         if roc < 0.5 - roc_tolerance or roc > 0.5 + roc_tolerance:
-            pack = sorted(zip(X_train.columns.tolist(), best_model.feature_importances_.tolist()),
+            pack = sorted(zip(X_train.columns.tolist(), model.feature_importances_.tolist()),
                           key=lambda tup: tup[1], reverse=True)
             data, idx = zip(*pack)
             first_feature = data[0]
@@ -78,13 +62,11 @@ def adversarial_detection(df_train, df_test, target_col=None, roc_tolerance=0.00
             print('No feature drift detected  (roc = ' + str(round(roc, 4)) + ')')
             print('The following features have been dropped:')
             print(features_to_drop)
-            if return_result:
-                return df_train_, df_test_, features_to_drop
-            else:
-                break
+            return features_to_drop
 
 
-def categorical_detection(df_train, df_test, col_name, top_n=None, plot_size=(12, 12), return_result=False):
+def categorical_detection(df_train, df_test, col_name, top_n=None, plot_size=(12, 12), return_result=False,
+                          file_name=None, adv_drift=False):
     """
     Compare a numerical feature in 2 dataframes.
     :param df_train: training set
@@ -93,7 +75,8 @@ def categorical_detection(df_train, df_test, col_name, top_n=None, plot_size=(12
     :param top_n: top n classes in df_train to be counted and plotted
     :param plot_size: plot size (x, y)
     :param return_result: return result if True
-    :return: all plotted stats
+    :param file_name: path + filename to save the plot
+    :param adv_drift: drift detected by adversarial validation method
     """
 
     result1 = dict()
@@ -122,8 +105,7 @@ def categorical_detection(df_train, df_test, col_name, top_n=None, plot_size=(12
     count_table_info1 = pd.concat([
         df_train[col_name].value_counts().nlargest(top_n),
         df_train[col_name].value_counts(normalize=True).nlargest(top_n),
-        df_train[col_name].value_counts(normalize=True).nlargest(top_n).cumsum()],
-        axis=1)
+        df_train[col_name].value_counts(normalize=True).nlargest(top_n).cumsum()], axis=1)
 
     count_table_info1.columns = ['Count', '%', 'Cum.%']
     count_table_info1 = count_table_info1.sort_values(by='Count', ascending=False)
@@ -146,6 +128,23 @@ def categorical_detection(df_train, df_test, col_name, top_n=None, plot_size=(12
     count_table_info2.columns = [col_name, 'Count', '%', 'Cum.%']
     print(count_table_info2)
 
+    print('-----------------Chi-square test--------------------')
+    cross_table = pd.crosstab(df_train[col_name], df_test[col_name], margins=False)
+    sig_lv = 0.05
+    chi_value, p_value, deg_free, _ = chi2_contingency(cross_table)
+    print('Chi-square statistic: ', chi_value)
+    print('Degrees of freedom: ', deg_free)
+    print('Significance level: ', sig_lv)
+    print('p-value: ', p_value)
+    has_drift = False
+    if p_value >= sig_lv:
+        print('<' + col_name + ' in these 2 datasets are independent> cannot be rejected.')
+        print('Drift detected!')
+        has_drift = True
+    else:
+        print('<' + col_name + ' in these 2 datasets are independent> can be rejected.')
+        print('No drift.')
+
     fig = plt.figure(figsize=plot_size)
     ax1 = plt.subplot2grid((1, 2), (0, 0))
     plt.pie(count_table_info1['Count'][:top_n], labels=count_table_info1[col_name][:top_n], autopct='%1.2f%%')
@@ -154,11 +153,15 @@ def categorical_detection(df_train, df_test, col_name, top_n=None, plot_size=(12
     plt.pie(count_table_info2['Count'][:top_n], labels=count_table_info2[col_name][:top_n], autopct='%1.2f%%')
     plt.title(col_name + ' in df2')
 
+    if (file_name is not None) and (has_drift or adv_drift):
+        fig.savefig(file_name)
+
     if return_result:
-        return result_df, count_table_info1, count_table_info2
+        return has_drift, result_df, count_table_info1, count_table_info2
 
 
-def numerical_detection(df_train, df_test, col_name, plot_size=(10, 5), return_result=False):
+def numerical_detection(df_train, df_test, col_name, plot_size=(10, 5), return_result=False, file_name=None,
+                        adv_drift=False):
     """
     Compare a numerical feature in 2 dataframes.
     :param df_train: training set
@@ -166,7 +169,8 @@ def numerical_detection(df_train, df_test, col_name, plot_size=(10, 5), return_r
     :param col_name: column name of this categorical feature
     :param plot_size: plot size (x,y)
     :param return_result: return result if True
-    :return: all plotted stats
+    :param file_name: path + filename to save the plot
+    :param adv_drift: drift detected by adversarial validation method
     """
 
     q1_1 = df_train[col_name].quantile(q=0.25)
@@ -231,18 +235,23 @@ def numerical_detection(df_train, df_test, col_name, plot_size=(10, 5), return_r
     result_df['df_train'] = result1.values()
     result_df['df_test'] = result2.values()
 
-    print('Statistics:')
     print(result_df)
     print()
 
     print('Kolmogorov-Smirnov test:')
     ks_result = ks_2samp(df_train[col_name], df_test[col_name])
-    print(ks_result)
-    if ks_result.pvalue > 0.05:
+    sig_lv = 0.05
+    print('KS statistic: ', ks_result.statistic)
+    print('Significance level: ', sig_lv)
+    print('p-value: ', ks_result.pvalue)
+    has_drift = False
+    if ks_result.pvalue > sig_lv:
         print('<These 2 distributions follows the same distribution> cannot be rejected.')
+        print('No drift.')
     else:
         print('<These 2 distributions follows the same distribution> can be rejected.')
-    print()
+        print('Drift')
+        has_drift = True
 
     plot_min = min(df_train[col_name].min(), df_test[col_name].min())
     plot_max = max(df_train[col_name].max(), df_test[col_name].max())
@@ -253,6 +262,7 @@ def numerical_detection(df_train, df_test, col_name, plot_size=(10, 5), return_r
     df_plot_2['label'] = 'df_test'
     df_plot = pd.concat([df_plot_1, df_plot_2], axis=0)
 
+    plt.figure()
     fig, ax = plt.subplots(3, 1, figsize=plot_size)
     ax[0].set_xlim(plot_min, plot_max)
     ax[1].set_xlim(plot_min, plot_max)
@@ -260,5 +270,22 @@ def numerical_detection(df_train, df_test, col_name, plot_size=(10, 5), return_r
     sns.histplot(data=df_test, x=col_name, kde=True, ax=ax[1])
     sns.boxplot(data=df_plot, x=col_name, y='label', ax=ax[2])
 
+    if (file_name is not None) and (has_drift or adv_drift):
+        fig.savefig(file_name)
+
     if return_result:
-        return result_df
+        return has_drift, result_df
+
+
+def auto_detection(df_train, df_test, col_name, return_result=False, file_name=None, adv_drift=False):
+    if df_train[col_name].dtype == 'object':
+        has_drift, result_df, _, _ = categorical_detection(
+            df_train=df_train, df_test=df_test, col_name=col_name,
+            return_result=return_result, file_name=file_name, adv_drift=adv_drift
+        )
+    else:
+        has_drift, result_df = numerical_detection(
+            df_train=df_train, df_test=df_test, col_name=col_name,
+            return_result=return_result, file_name=file_name, adv_drift=adv_drift
+        )
+    return has_drift, result_df

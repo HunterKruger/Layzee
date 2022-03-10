@@ -44,48 +44,6 @@ def pca(X, n):
     return pd.DataFrame(result, columns=cols)
 
 
-# test passed
-def tree_based_reg(X, y, n_keep, n_trees, depth, n_jobs=-1):
-    """
-    Only for regression case!
-    This creates a Random Forest model to predict the target.
-    Only the top features according to the feature importance computed by the algorithm will be selected.
-    :param X: df without target, encoded
-    :param y: target col
-    :param n_keep: number of features to keep
-    :param n_trees: number of trees in Random Forest
-    :param depth: tree depth in Random Forest
-    :param n_jobs: multi-core
-    :return X with only top features
-    """
-    model = RandomForestRegressor(n_estimators=n_trees, max_depth=depth, n_jobs=n_jobs)
-    model.fit(X, y)
-    feature_importance = sorted(zip(X.columns.to_list(), model.feature_importances_), reverse=True)
-    top_list = [feature for feature, score in feature_importance]
-    if n_keep > len(top_list):
-        n_keep = len(top_list)
-    return X[top_list[:n_keep]]
-
-
-# test passed
-def lasso_reg(X, y, l1='auto'):
-    """
-    Only for regression case!
-    This creates a LASSO model to predict the target, using 3-fold cross-validation to select the best value
-    of the regularization term. Only the features with nonzero coefficients will be selected.
-    :param X: df without target, encoded
-    :param y: target col
-    :param l1: list of floats, for l1 penalty
-    :return: X with only selected features
-    """
-    if l1 == 'auto':
-        l1 = [0.10, 0.1, 1, 10, 100]
-    model = LassoCV(cv=3, alphas=l1).fit(X, y)
-    result_series = pd.Series(list(model.coef_), index=X.columns)
-    result_features = result_series[result_series != 0].index.tolist()
-    return X[result_features]
-
-
 def pearson_corr(X, y, n_keep, num_cols):
     """
     :param X: df without target, encoded
@@ -105,45 +63,54 @@ def pearson_corr(X, y, n_keep, num_cols):
 
 
 # test passed
-def tree_based_cls(X, y, n_keep, n_trees, depth, n_jobs=-1):
+def lasso(X, y, regression, l1='auto', n_jobs=-1):
     """
-    Only for classification case!
+    Only for regression case!
+    This creates a LASSO model to predict the target, using 3-fold cross-validation to select the best value
+    of the regularization term. Only the features with nonzero coefficients will be selected.
+    :param X: df without target, encoded
+    :param y: target col
+    :param regression: True for regression task, else for classification
+    :param l1: list of floats, for l1 penalty
+    :param n_jobs: multi-threads
+    :return: X with only selected features
+    """
+    if l1 == 'auto':
+        l1 = [0.10, 0.1, 1, 10, 100]
+    if regression:
+        model = LassoCV(cv=3, alphas=l1, n_jobs=n_jobs).fit(X, y)
+        result_series = pd.Series(list(model.coef_), index=X.columns)
+    else:
+        model = LogisticRegressionCV(
+            penalty='l1', cv=3, solver='liblinear', Cs=[1 / x for x in l1],
+            class_weight='balanced', n_jobs=n_jobs).fit(X, y)
+        result_series = pd.Series(list(model.coef_[0]), index=X.columns)
+    result_features = result_series[result_series != 0].index.tolist()
+    return X[result_features]
+
+
+# test passed
+def tree_based(X, y, regression, n_keep, n_trees=100, depth=5, n_jobs=-1):
+    """
+    Only for regression case!
     This creates a Random Forest model to predict the target.
     Only the top features according to the feature importance computed by the algorithm will be selected.
     :param X: df without target, encoded
     :param y: target col
+    :param regression: True for regression task, else for classification
     :param n_keep: number of features to keep
     :param n_trees: number of trees in Random Forest
     :param depth: tree depth in Random Forest
-    :param n_jobs: multi-core
-    :return DataFrame with only top features
+    :param n_jobs: multi-threads
+    :return X with only top features
     """
-    model = RandomForestClassifier(n_estimators=n_trees, max_depth=depth, n_jobs=n_jobs)
+    if regression:
+        model = RandomForestRegressor(n_estimators=n_trees, max_depth=depth, n_jobs=n_jobs)
+    else:
+        model = RandomForestClassifier(n_estimators=n_trees, max_depth=depth, n_jobs=n_jobs)
     model.fit(X, y)
-    ft_imp = sorted(zip(X.columns.to_list(), model.feature_importances_), reverse=True)
-    top_list = [feature for feature, score in ft_imp]
+    feature_importance = sorted(zip(X.columns.to_list(), model.feature_importances_), reverse=True)
+    top_list = [feature for feature, score in feature_importance]
     if n_keep > len(top_list):
         n_keep = len(top_list)
     return X[top_list[:n_keep]]
-
-
-# test passed
-def lasso_cls(X, y, l1='auto', n_jobs=-1):
-    """
-    Only for classification case!
-    This creates a LASSO model to predict the target, using 3-fold cross-validation to select the best value
-    of the regularization term. Only the features with nonzero coefficients will be selected.
-    :param l1: list of floats, for l1 penalty
-    :param X: df without target, encoded
-    :param y: target col
-    :param n_jobs: multi-core
-    :return: DataFrame with only selected features
-    """
-    if l1 is 'auto':
-        l1 = [0.10, 0.1, 1, 10, 100]
-    model = LogisticRegressionCV(
-        penalty='l1', cv=3, solver='liblinear', Cs=[1 / x for x in l1],
-        class_weight='balanced', n_jobs=n_jobs).fit(X, y)
-    result_series = pd.Series(list(model.coef_[0]), index=X.columns)
-    result_features = result_series[result_series != 0].index.tolist()
-    return X[result_features]

@@ -86,7 +86,7 @@ def handle_outlier(df, col, drop=False):
     :param col: column name, must be numerical
     :param drop:
         False: outliers replaced by np.nan
-        True: drop current rows
+        True: drop rows with outliers
     """
     q1 = df[col].quantile(q=0.25)
     q3 = df[col].quantile(q=0.75)
