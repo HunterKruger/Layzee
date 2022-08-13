@@ -1,6 +1,8 @@
 .DS_Store
 .idea
-*.csv
+.ipynb_checkpoints/
+.virtual_documents/
+.git/
+__pycache__/
 *.pyc
-data/churn_metadata.xlsx
-data/churn_metadata.xlsx
+

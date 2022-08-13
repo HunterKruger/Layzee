@@ -3,6 +3,7 @@ from feature_handling import *
 from feature_reduction import *
 import os
 
+
 class EDA_report:
 
     def __init__(

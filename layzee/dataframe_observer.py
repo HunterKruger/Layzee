@@ -16,7 +16,7 @@ All test passed.
 # test passed
 def read_df_info(df, return_result=False):
     """
-    Print general stats of a DataFrame.
+    Print general stats of a DataFrame;
     :param df: a DataFrame
     :param return_result: return stats in a dict if True
     """
@@ -43,7 +43,7 @@ def read_df_info(df, return_result=False):
 # test passed
 def describe_cat_col(df, col_name, top_n=None, plot=True, plot_size=(8, 6), return_result=False, file_name=None):
     """
-    Describe basic stats of a categorical column in a DataFrame.
+    Describe basic stats of a categorical column in a DataFrame;
     :param df: a DataFrame
     :param col_name: column name
     :param top_n: keep top N classes in count table, plot only top N classes
@@ -102,7 +102,7 @@ def describe_cat_col(df, col_name, top_n=None, plot=True, plot_size=(8, 6), retu
 # test passed
 def describe_num_col(df, col_name, plot=True, plot_size=None, return_result=False, file_name=None):
     """
-    Describe basic stats of a categorical column in a DataFrame.
+    Describe basic stats of a categorical column in a DataFrame;
     :param df: a DataFrame
     :param col_name: column name
     :param plot: do plot
@@ -148,6 +148,8 @@ def describe_num_col(df, col_name, plot=True, plot_size=None, return_result=Fals
     min_clipped = df[col_name].quantile(q=0.02)
     max_clipped = df[col_name].quantile(q=0.98)
     clipped = np.array([x for x in df[col_name] if max_clipped >= x >= min_clipped])
+    if len(clipped) > 5000:
+        clipped = np.random.choice(clipped, 5000)
     shapiro_test = shapiro(clipped)
     print('Shapiro-Wilk statistic: ', shapiro_test.statistic)
     print('Significance level: 0.05')
@@ -179,7 +181,7 @@ def describe_num_col(df, col_name, plot=True, plot_size=None, return_result=Fals
 
 def describe_num_num(df, num_col1, num_col2, plot=True, plot_size=None, return_result=False, file_name=None):
     """
-    Observe two numerical columns.
+    Observe two numerical columns;
     :param df: a DataFrame
     :param num_col1: 1st numerical column name
     :param num_col2: 2nd numerical column name
@@ -213,15 +215,17 @@ def describe_num_num(df, num_col1, num_col2, plot=True, plot_size=None, return_r
         return result
 
 
-def describe_cat_cat(df, cat_col1, cat_col2, plot=True, plot_size=None, return_result=False, file_name=None):
+def describe_cat_cat(df, cat_col1, cat_col2, normalize=False, plot=True, plot_size=None, return_result=False,
+                     file_name=None):
     """
-    Observe two numerical columns.
+    Observe two numerical columns;
     :param df: a DataFrame
     :param cat_col1: 1st categorical column
     :param cat_col2: 2nd categorical column
+    :param normalize: {'all', 'index', 'columns', False}
     :param return_result: return result in dict
     :param plot: do plot
-    :param plot_size: (x,y)
+    :param plot_size: (x, y)
     :param file_name: path + filename to save the plot
     """
     result = {'col1': cat_col1,
@@ -230,7 +234,7 @@ def describe_cat_cat(df, cat_col1, cat_col2, plot=True, plot_size=None, return_r
               'type2': df[cat_col2].dtype
               }
 
-    cross_table = pd.crosstab(df[cat_col1], df[cat_col2], margins=False)
+    cross_table = pd.crosstab(df[cat_col1], df[cat_col2], margins=False, normalize=normalize)
 
     sig_lv = 0.05
     chi_value, p_value, deg_free, _ = chi2_contingency(cross_table)
@@ -253,7 +257,7 @@ def describe_cat_cat(df, cat_col1, cat_col2, plot=True, plot_size=None, return_r
         if plot_size is not None:
             sns.set(rc={'figure.figsize': plot_size})
         plt.figure()
-        plot = sns.heatmap(cross_table, annot=True, fmt="d", linewidths=.5, cmap=sns.cm.rocket_r, vmin=0)
+        plot = sns.heatmap(cross_table, annot=True, linewidths=.5, cmap=sns.cm.rocket_r, vmin=0)
         if file_name is not None:
             fig = plot.get_figure()
             fig.savefig(file_name)
@@ -262,13 +266,14 @@ def describe_cat_cat(df, cat_col1, cat_col2, plot=True, plot_size=None, return_r
         return result
 
 
-def describe_cat_num(df, num_col, cat_col, plot=True,
+def describe_cat_num(df, cat_col, num_col, plot=True,
                      plot_size=None, return_result=False, file_name=None):
     """
     :param df: a DataFrame
     :param num_col: a numerical column
     :param cat_col: a categorical column
     :param return_result: return result in dict
+    :param plot: do plot or not
     :param plot_size: (x,y)
     :param file_name: path + filename to save the plot
     """
@@ -309,54 +314,55 @@ def describe_cat_num(df, num_col, cat_col, plot=True,
         return result
 
 
-def auto_describe_col(df, col, plot=True, plot_size=None, return_result=False, file_name=None):
+def auto_describe_col(df, col, unique_per=0.05, plot=True, plot_size=None, return_result=False, file_name=None):
     """
-    Automatically describe a column in a DataFrame
+    Automatically describe a column in a DataFrame;
     :param df: a DataFrame
     :param col: column name
+    :param unique_per: threshold of unique%, to judge data type
     :param return_result: return result in dict
     :param plot: do plot
     :param plot_size: (x,y)
     :param file_name: path + filename to save the plot
     """
-    if df[col].dtype == 'object':
-        result, _ = describe_cat_col(df, col, plot=plot, plot_size=plot_size, return_result=return_result,
-                                     file_name=file_name)
+    if df[col].nunique() / len(df[col]) < unique_per:
+        return describe_cat_col(df, col, plot=plot, plot_size=plot_size, return_result=return_result,
+                                file_name=file_name)
     else:
-        result = describe_num_col(df, col, plot=plot, plot_size=plot_size, return_result=return_result,
-                                  file_name=file_name)
-    return result
+        return describe_num_col(df, col, plot=plot, plot_size=plot_size, return_result=return_result,
+                                file_name=file_name)
 
 
-def auto_describe_pair(df, col1, col2, plot=True, plot_size=None, return_result=False, file_name=None):
+def auto_describe_pair(df, col1, col2, unique_per=0.05, plot=True, plot_size=None, return_result=False, file_name=None):
     """
-    Automatically describe a pair of columns in a DataFrame
+    Automatically describe a pair of columns in a DataFrame;
     :param df: a DataFrame
     :param col1: 1st column
     :param col2: 2nd column
+    :param unique_per: threshold of unique%, to judge data type
     :param return_result: return result in dict
     :param plot: do plot
     :param plot_size: (x,y)
     :param file_name: path + filename to save the plot
     """
-    col_type1 = df[col1].dtype
-    col_type2 = df[col2].dtype
-    if col_type1 != 'object' and col_type2 != 'object':
+    col_type1 = df[col1].nunique() / len(df[col1]) < unique_per  # categorical
+    col_type2 = df[col1].nunique() / len(df[col1]) < unique_per  # categorical
+    if not col_type1 and not col_type2:
         return describe_num_num(
             df=df, num_col1=col1, num_col2=col2, plot=plot,
             plot_size=plot_size, return_result=return_result, file_name=file_name
         )
-    if col_type1 == 'object' and col_type2 == 'object':
+    if col_type1 and col_type2:
         return describe_cat_cat(
             df=df, cat_col1=col1, cat_col2=col2, plot=plot,
             plot_size=plot_size, return_result=return_result, file_name=file_name
         )
-    if col_type1 == 'object' and col_type2 != 'object':
+    if col_type1 and not col_type2:
         return describe_cat_num(
             df=df, cat_col=col1, num_col=col2, plot=plot,
             plot_size=plot_size, return_result=return_result, file_name=file_name
         )
-    if col_type1 != 'object' and col_type2 == 'object':
+    if not col_type1 and col_type2:
         return describe_cat_num(
             df=df, cat_col=col2, num_col=col1, plot=plot,
             plot_size=plot_size, return_result=return_result, file_name=file_name
@@ -364,23 +370,23 @@ def auto_describe_pair(df, col1, col2, plot=True, plot_size=None, return_result=
 
 
 # test passed
-def missing_pattern(df, top_n=5, plot=True, plot_size=None, file_name=None):
+def missing_pattern(df, top_n=5, plot_size=None, file_name=None, return_result=False):
     """
-    Check the missing patterns of a DataFrame
+    Check the missing patterns of a DataFrame;
     :param df: a DataFrame
     :param top_n: the top n patterns to be displayed
-    :param plot: do plot
     :param plot_size: (x,y)
     :param file_name: path + filename to save the plot
+    :param return_result: return pattern dataframe
     """
-    if plot:
-        if plot_size is not None:
-            sns.set(rc={'figure.figsize': plot_size})
-        plt.figure()
-        plot = sns.heatmap(df[df.columns[df.isnull().any()].tolist()].isnull(), yticklabels=False, cmap='hot_r', cbar=False)
-        if file_name is not None:
-            fig = plot.get_figure()
-            fig.savefig(file_name)
+    if plot_size is not None:
+        sns.set(rc={'figure.figsize': plot_size})
+    plt.figure()
+    plot = sns.heatmap(df[df.columns[df.isnull().any()].tolist()].isnull(), yticklabels=False, cmap='hot_r',
+                       cbar=False)
+    if file_name is not None:
+        fig = plot.get_figure()
+        fig.savefig(file_name)
 
     df_miss = df[df.columns[df.isnull().any()]].applymap(lambda x: '1' if pd.isna(x) else '0')
     row_miss = df_miss.apply(lambda x: '-'.join(x.values), axis=1)
@@ -388,56 +394,55 @@ def missing_pattern(df, top_n=5, plot=True, plot_size=None, file_name=None):
     top_miss_rows_pattern = row_miss.value_counts().index.tolist()[:top_n]
     headers = df.columns[df.isnull().any()].tolist()
 
-    result_df = pd.DataFrame(data=[x.split('-') for x in top_miss_rows_pattern], columns=headers)
-    result_df['PATTERN_COUNT'] = top_miss_rows_count
-    result_df.set_index('PATTERN_COUNT', inplace=True)
-
-    return result_df
+    if return_result:
+        result_df = pd.DataFrame(data=[x.split('-') for x in top_miss_rows_pattern], columns=headers)
+        result_df['PATTERN_COUNT'] = top_miss_rows_count
+        result_df.set_index('PATTERN_COUNT', inplace=True)
+        return result_df
 
 
 # test passed
-def correlation(df, method='pearson', k=None, plot=True, plot_size=None, file_name=None):
+def correlation(df, method='pearson', k=None, plot_size=None, file_name=None, return_result=False):
     """
-    Plot correlation between columns, pairs with correlations larger than the specified threshold will be returned.
+    Plot correlation between columns, pairs with correlations larger than the specified threshold will be returned;
     :param df: a DataFrame
     :param method: 'pearson', 'spearman', 'kendall'
-    :param plot: do plot
     :param plot_size: (x, y)
     :param k:
         None, return corr matrix
         0~1, return pairs with abs(corr)>=threshold and corr matrix
         >1 in int, return pairs with top k corr and corr matrix
+    :param return_result: return result, return type depended on k
     :param file_name: path + filename to save the plot
     """
     corr_cols = df.columns.tolist()
     corr = df.corr(method)
 
-    if plot:
-        if plot_size is not None:
-            sns.set(rc={'figure.figsize': plot_size})
-        plt.figure()
-        plot = sns.heatmap(corr, annot=True, linewidths=.5, cmap=sns.cm.vlag, vmin=-1, vmax=1)
-        if file_name is not None:
-            fig = plot.get_figure()
-            fig.savefig(file_name)
+    if plot_size is not None:
+        sns.set(rc={'figure.figsize': plot_size})
+    plt.figure()
+    plot = sns.heatmap(corr, annot=True, linewidths=.5, cmap=sns.cm.vlag, vmin=-1, vmax=1)
 
-    if k is None:
-        return corr
+    if file_name is not None:
+        fig = plot.get_figure()
+        fig.savefig(file_name)
 
-    if 0 < k <= 1:
-        result = []
-        for i in range(len(corr_cols)):
-            for j in range(i):
-                corr_ij = corr.loc[corr_cols[i], corr_cols[j]]
-                if abs(corr_ij) >= k:
+    if return_result:
+        if k is None:
+            return corr
+        if 0 < k <= 1:
+            result = []
+            for i in range(len(corr_cols)):
+                for j in range(i):
+                    corr_ij = corr.loc[corr_cols[i], corr_cols[j]]
+                    if abs(corr_ij) >= k:
+                        result.append((corr_cols[i], corr_cols[j], corr_ij, abs(corr_ij)))
+            return result, corr
+        if k > 1:
+            result = []
+            for i in range(len(corr_cols)):
+                for j in range(i):
+                    corr_ij = corr.loc[corr_cols[i], corr_cols[j]]
                     result.append((corr_cols[i], corr_cols[j], corr_ij, abs(corr_ij)))
-        return result, corr
-
-    if k > 1:
-        result = []
-        for i in range(len(corr_cols)):
-            for j in range(i):
-                corr_ij = corr.loc[corr_cols[i], corr_cols[j]]
-                result.append((corr_cols[i], corr_cols[j], corr_ij, abs(corr_ij)))
-        sorted_result = sorted(result, key=lambda t: t[-1])[::-1]  # sort by abs(corr) in desc order
-        return sorted_result[:int(k)], corr
+            sorted_result = sorted(result, key=lambda t: t[-1])[::-1]  # sort by abs(corr) in desc order
+            return sorted_result[:int(k)], corr

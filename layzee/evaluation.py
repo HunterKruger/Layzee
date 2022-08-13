@@ -203,7 +203,7 @@ class BinClsEvaluation(Evaluation):
         print('--------Confusion Matrix-----------')
         cols = ['Predicted_1', 'Predicted_0']
         idx = ['Actual_1', 'Actual_0']
-        cm = confusion_matrix(self.y_true, self.y_score > cutoff)
+        cm = confusion_matrix(self.y_true, self.y_score > cutoff, labels=[1, 0])
         record_count = pd.DataFrame(data=cm, columns=cols, index=idx)
         print(record_count)
         print('-----------------------------------')
