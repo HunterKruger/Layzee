@@ -2,6 +2,7 @@ import pandas as pd
 import seaborn as sns
 import numpy as np
 from matplotlib import pyplot as plt
+
 from scipy.stats import shapiro, chi2_contingency, f_oneway
 
 pd.options.display.max_columns = 100
@@ -41,7 +42,7 @@ def read_df_info(df, return_result=False):
 
 
 # test passed
-def describe_cat_col(df, col_name, top_n=None, plot=True, plot_size=(8, 6), return_result=False, file_name=None):
+def describe_cat_col(df, col_name, top_n=None, plot=True, plot_size=None, return_result=False, file_name=None):
     """
     Describe basic stats of a categorical column in a DataFrame;
     :param df: a DataFrame
@@ -102,7 +103,7 @@ def describe_cat_col(df, col_name, top_n=None, plot=True, plot_size=(8, 6), retu
 # test passed
 def describe_num_col(df, col_name, plot=True, plot_size=None, return_result=False, file_name=None):
     """
-    Describe basic stats of a categorical column in a DataFrame;
+    Describe basic stats of a numerical column in a DataFrame;
     :param df: a DataFrame
     :param col_name: column name
     :param plot: do plot
@@ -138,8 +139,8 @@ def describe_num_col(df, col_name, plot=True, plot_size=None, return_result=Fals
     result['Q1'] = q1
     result['Q3'] = q3
     result['IQR'] = iqr
-    result['Down'] = lower_bound
-    result['Up'] = upper_bound
+    result['Down'] = lower_bound if lower_bound > result['Min'] else result['Min']
+    result['Up'] = upper_bound if upper_bound < result['Max'] else result['Max']
 
     print('-------------------------------------')
     for k, v in result.items():

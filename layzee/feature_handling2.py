@@ -35,24 +35,27 @@ def imputer(df, df2, col, method='mode', groupby=None):
         elif method == 'mode':
             df[col] = df.groupby(groupby)[col].apply(lambda x: x.fillna(x.mode()[0]))
         else:
-            print("Please set 'groupby' to None!")
+            print("Please set <groupby> to None!")
         ## todo: transform df2
 
     return df, df2
 
 
-def auto_imputers(df, df2, cat_method='mode', num_method='median'):
+def auto_imputers(df, df2, cat_cols=None, num_cols=None, cat_method='mode', num_method='median'):
     """
     Impute missing values in several columns at a time, automatically detect categorical and numerical features
     :param df: a dataframe
     :param df2: a dataframe
+    :param cat_cols: list of categorical columns, automatically detect if None
+    :param num_cols: list of numerical columns, automatically detect if None
     :param cat_method: imputing method for categorical features
     :param num_method: imputing method for numerical features
     """
-    for col in df.select_dtypes('object').columns.tolist():
+    cat_cols = df.select_dtypes('object').columns.tolist() if cat_cols is None else cat_cols
+    num_cols = df.select_dtypes('number').columns.tolist() if num_cols is None else num_cols
+    for col in cat_cols:
         df, df2 = imputer(df, df2, col, cat_method)
-
-    for col in df.select_dtypes('number').columns.tolist():
+    for col in num_cols:
         df, df2 = imputer(df, df2, col, num_method)
 
     return df, df2
@@ -65,7 +68,7 @@ def keep_top_n(df, df2, col, N, include_nan=False, replacer=np.nan):
     :param df2: a dataframe
     :param col: column name, should be categorical
     :param N: keep top N class if N is integer(N>=1);
-              keep classes whose percentage is higher then N if N is decimal(0<N<1)
+              keep classes whose percentage is higher than N if N is decimal(0<N<1)
     :param include_nan: include nan when counting top N classes
     :param replacer: the value to replace long tail
     """
@@ -182,21 +185,22 @@ def handle_skewness(df, df2, col, threshold=1, drop_origin=True):
 
 def general_encoder(df, df2, num_cols='auto', ordinal_cols=None, one_hot_cols='auto', drop=None, return_encoders=False):
     """
-    A general encoder to transform numerical, categorical and ordinal features.
+    A general encoder to transform numerical, categorical and ordinal features;
     :param df: a dataframe
     :param df2: a dataframe
-    :param drop:
-            - None : retain all features (the default).
+    :param drop: for one-hot encoded columns
+            - None : retain all features (the default)
             - 'first' : drop the first category in each feature. If only one
-                        category is present, the feature will be dropped entirely.
+                        category is present, the feature will be dropped entirely
             - 'if_binary' : drop the first category in each feature with two
                             categories. Features with 1 or more than 2 categories are
-                            left intact.
+                            left intact
     :param num_cols: list of numerical columns to be encoded;
                      select all numerical columns if 'auto'
     :param one_hot_cols: list of categorical columns to be one-hot encoded;
                          select all categorical columns if 'auto'
     :param ordinal_cols: list of ordinal columns to be ordinal encoded
+    :param return_encoders: return 3 types of encoders
     """
 
     if drop is None:

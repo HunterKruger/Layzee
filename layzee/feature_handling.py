@@ -33,22 +33,28 @@ def imputer(df, col, method='mode', groupby=None):
         elif method == 'mode':
             df[col] = df.groupby(groupby)[col].apply(lambda x: x.fillna(x.mode()[0]))
         else:
-            print("Please set 'groupby' to None!")
+            print("Please set <groupby> to None!")
 
     return df
 
 
-def auto_imputers(df, cat_method='mode', num_method='median'):
+def auto_imputers(df, df2, cat_cols=None, num_cols=None, cat_method='mode', num_method='median'):
     """
     Impute missing values in several columns at a time, automatically detect categorical and numerical features
     :param df: a dataframe
+    :param df2: a dataframe
+    :param cat_cols: list of categorical columns, automatically detect if None
+    :param num_cols: list of numerical columns, automatically detect if None
     :param cat_method: imputing method for categorical features
     :param num_method: imputing method for numerical features
     """
-    for col in df.select_dtypes('object').columns.tolist():
+    cat_cols = df.select_dtypes('object').columns.tolist() if cat_cols is None else cat_cols
+    num_cols = df.select_dtypes('number').columns.tolist() if num_cols is None else num_cols
+    for col in cat_cols:
         df = imputer(df, col, cat_method)
-    for col in df.select_dtypes('number').columns.tolist():
+    for col in num_cols:
         df = imputer(df, col, num_method)
+
     return df
 
 
@@ -58,7 +64,7 @@ def keep_top_n(df, col, N, include_nan=False, replacer=np.nan):
     :param df: a dataframe
     :param col: column name, should be categorical
     :param N: keep top N class if N is integer(N>=1);
-              keep classes whose percentage is higher then N if N is decimal(0<N<1)
+              keep classes whose percentage is higher than N if N is decimal(0<N<1)
     :param include_nan: include nan when counting top N classes
     :param replacer: the value to replace long tail
     """
@@ -81,11 +87,11 @@ def keep_top_n(df, col, N, include_nan=False, replacer=np.nan):
 
 def handle_outlier(df, col, drop=False):
     """
-    Handle outliers in a numerical column.
+    Handle outliers in a numerical column;
     :param df: a dataframe
     :param col: column name, must be numerical
     :param drop:
-        False: outliers replaced by np.nan
+        False: outliers replaced by missing value
         True: drop rows with outliers
     """
     q1 = df[col].quantile(q=0.25)
@@ -104,13 +110,14 @@ def handle_outlier(df, col, drop=False):
 
 def outlier_encoder(df, col, drop_origin=True):
     """
-    Encode outliers in this column by col_upper, col_lower, col_inter.
-    Should not contain missing values, or they will be imputed by median.
+    Encode outliers in this column by col_upper, col_lower, col_inter;
+    Should not contain missing values, or they will be imputed by median;
     :param df: a dataframe
     :param col: column name, must be numerical
     :param drop_origin: drop origin column
     """
 
+    df[col].fillna(df[col].median(), inplace=True)
     q1 = df[col].quantile(q=0.25)
     q3 = df[col].quantile(q=0.75)
     iqr = q3 - q1
@@ -119,7 +126,7 @@ def outlier_encoder(df, col, drop_origin=True):
 
     df[col + '_lower'] = df[col].apply(lambda x: 1 if x < lower_bound else 0)
     df[col + '_upper'] = df[col].apply(lambda x: 1 if x > upper_bound else 0)
-    df[col + '_inner'] = df[col].apply(lambda x: np.nan if x > upper_bound or x < lower_bound else x)
+    df[col + '_inner'] = df[col].apply(lambda x: df[col].median() if x > upper_bound or x < lower_bound else x)
 
     if drop_origin:
         df.drop(col, axis=1, inplace=True)
@@ -169,21 +176,21 @@ def handle_skewness(df, col, threshold=1, drop_origin=True):
 
 def general_encoder(df, num_cols='auto', ordinal_cols=None, one_hot_cols='auto', drop=None, return_encoders=False):
     """
-    A general encoder to transform numerical, categorical and ordinal features.
+    A general encoder to transform numerical, categorical and ordinal features；
     :param df: a dataframe
-    :param drop:
-            - None : retain all features (the default).
+    :param drop: for one-hot encoded features
+            - None : retain all features (the default)
             - 'first' : drop the first category in each feature. If only one
-                        category is present, the feature will be dropped entirely.
+                        category is present, the feature will be dropped entirely
             - 'if_binary' : drop the first category in each feature with two
                             categories. Features with 1 or more than 2 categories are
-                            left intact.
+                            left intact
     :param num_cols: list of numerical columns to be encoded;
                      select all numerical columns if 'auto'
     :param one_hot_cols: list of categorical columns to be one-hot encoded;
                          select all categorical columns if 'auto'
     :param ordinal_cols: list of ordinal columns to be ordinal encoded
-    :param return_encoders:  return 3 types of encoders
+    :param return_encoders: return 3 types of encoders
     """
 
     if drop is None:
